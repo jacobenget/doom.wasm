@@ -26,9 +26,6 @@
 #include "doomfeatures.h"
 #include "doomtype.h"
 
-#ifdef ORIGCODE
-#include "gusconf.h"
-#endif
 #include "i_sound.h"
 #include "i_video.h"
 #include "m_argv.h"
