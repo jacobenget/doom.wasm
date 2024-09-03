@@ -6,13 +6,8 @@ else
 	VB=@
 endif
 
-
-SDL_CFLAGS = `sdl2-config --cflags`
-SDL_LIBS = `sdl2-config --cflags --libs` -lSDL2_mixer
-
-
 CC = clang  # gcc or g++
-CFLAGS += -DFEATURE_SOUND $(SDL_CFLAGS)
+CFLAGS += -DFEATURE_SOUND
 LDFLAGS +=
 LIBS += -lm -lc $(SDL_LIBS)
 
@@ -27,14 +22,48 @@ SRC_DOOM_SDL = doomgeneric_sdl.o mus2mid.o i_sdlmusic.o i_sdlsound.o
 OBJS += $(addprefix $(OUTPUT_DIR)/, $(SRC_DOOM))
 OBJS_SDL += $(addprefix $(OUTPUT_DIR_SDL)/, $(SRC_DOOM_SDL))
 
+# We'll depend upon a specific version of SDL and SDL_mixer that's been built and installed locally,
+# to maximize the robustness of the SDL version of Doom we're using here as a testbed for changes.
+SDL_BUILD_DIR = build
+SDL_INSTALLATION_DIR = installation
+SDL_INSTALL = SDL/$(SDL_BUILD_DIR)/$(SDL_INSTALLATION_DIR)
+SDL_MIXER_INSTALL = SDL_mixer/$(SDL_OUSDL_BUILD_DIRTPUT_DIR)/$(SDL_INSTALLATION_DIR)
+
+SDL_CFLAGS = -I$(SDL_INSTALL)/include/SDL2 -I$(SDL_MIXER_INSTALL)/include/SDL2 -D_THREAD_SAFE
+SDL_LIBS = -L$(SDL_INSTALL)/lib -L$(SDL_MIXER_INSTALL)/lib -lSDL2 -lSDL2_mixer
+
+
+.PHONY: clean build-SDL build-SDL_mixer
+
 all: $(OUTPUT)
+
+# Retreive, build, and install a version of SDL that has been found to work for the needs of this project
+build-SDL:
+	git clone git@github.com:libsdl-org/SDL.git --branch release-2.30.7 --depth 1; \
+	cd SDL; \
+	mkdir -p $(SDL_BUILD_DIR)/$(SDL_INSTALLATION_DIR); \
+	cd $(SDL_BUILD_DIR); \
+	CC=$(CC) ../configure --prefix=$(shell pwd)/$(SDL_INSTALL); \
+	make; \
+	make install;
+
+# Retreive, build, and install a version of SDL_mixer that has been found to work for the needs of this project
+# NOTE: to build SDL_mixer one must have first built SDL. This dependency isn't explicitly called out here via 'make' targets because build-SDL is a PHONY target.
+build-SDL_mixer:
+	git clone git@github.com:libsdl-org/SDL_mixer.git --branch release-2.0.4 --depth 1; \
+	cd SDL_mixer; \
+	mkdir -p $(SDL_BUILD_DIR)/$(SDL_INSTALLATION_DIR); \
+	cd $(SDL_BUILD_DIR); \
+	CC=$(CC) ../configure --prefix=$(shell pwd)/$(SDL_MIXER_INSTALL) --with-sdl-prefix=$(shell pwd)/$(SDL_INSTALL); \
+	make; \
+	make install;
 
 clean:
 	rm -rf $(OUTPUT_DIR)
 
 $(OUTPUT): $(OBJS) $(OBJS_SDL)
 	@echo [Linking $@]
-	$(VB)$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(OBJS_SDL) -o $@ $(LIBS)
+	$(VB)$(CC) $(CFLAGS) $(SDL_CFLAGS) $(LDFLAGS) $(OBJS) $(OBJS_SDL) -o $@ $(LIBS) $(SDL_LIBS)
 
 $(OBJS): | $(OUTPUT_DIR)
 
@@ -48,11 +77,11 @@ $(OUTPUT_DIR_SDL):
 
 $(OUTPUT_DIR)/%.o: ../src/%.c
 	@echo [Compiling $<]
-	$(VB)$(CC) $(CFLAGS) -c $< -o $@
+	$(VB)$(CC) $(CFLAGS) $(SDL_CFLAGS) -c $< -o $@
 
 $(OUTPUT_DIR_SDL)/%.o: %.c
 	@echo [Compiling $<]
-	$(VB)$(CC) $(CFLAGS) -I$(shell pwd)/../src -c $< -o $@
+	$(VB)$(CC) $(CFLAGS) $(SDL_CFLAGS) -I$(shell pwd)/../src -c $< -o $@
 
 print:
 	@echo OBJS: $(OBJS)
