@@ -7,7 +7,7 @@ else
 endif
 
 CC = clang  # gcc or g++
-CFLAGS += -DFEATURE_SOUND
+CFLAGS += -DFEATURE_SOUND -I$(shell pwd)/../include
 LDFLAGS +=
 LIBS += -lm -lc $(SDL_LIBS)
 
@@ -81,7 +81,7 @@ $(OUTPUT_DIR)/%.o: ../src/%.c
 
 $(OUTPUT_DIR_SDL)/%.o: %.c
 	@echo [Compiling $<]
-	$(VB)$(CC) $(CFLAGS) $(SDL_CFLAGS) -I$(shell pwd)/../src -c $< -o $@
+	$(VB)$(CC) $(CFLAGS) $(SDL_CFLAGS) -c $< -o $@
 
 print:
 	@echo OBJS: $(OBJS)
