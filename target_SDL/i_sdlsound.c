@@ -280,7 +280,7 @@ static void UnlockAllocatedSound(allocated_sound_t *snd)
     //printf("-- %s: Use count=%i\n", snd->sfxinfo->name, snd->use_count);
 }
 
-// When a sound stops, check if it is still playing.  If it is not, 
+// When a sound stops, check if it is still playing.  If it is not,
 // we can mark the sound data as CACHE to be freed back for other
 // means.
 
@@ -436,7 +436,7 @@ static boolean ExpandSoundData_SRC(sfxinfo_t *sfxinfo,
 
     if (clipped > 0)
     {
-        fprintf(stderr, "Sound '%s': clipped %u samples (%0.2f %%)\n", 
+        fprintf(stderr, "Sound '%s': clipped %u samples (%0.2f %%)\n",
                         sfxinfo->name, clipped,
                         400.0 * clipped / chunk->alen);
     }
@@ -536,8 +536,8 @@ static boolean ExpandSoundData_SDL(sfxinfo_t *sfxinfo,
     SDL_AudioCVT convertor;
     Mix_Chunk *chunk;
     uint32_t expanded_length;
- 
-    // Calculate the length of the expanded version of the sample.    
+
+    // Calculate the length of the expanded version of the sample.
 
     expanded_length = (uint32_t) ((((uint64_t) length) * mixer_freq) / samplerate);
 
@@ -689,7 +689,7 @@ static boolean CacheSFX(sfxinfo_t *sfxinfo)
 #endif
 
     // don't need the original lump any more
-  
+
     W_ReleaseLumpNum(lumpnum);
 
     return true;
@@ -871,7 +871,7 @@ static int I_SDL_StartSound(sfxinfo_t *sfxinfo, int channel, int vol, int sep)
     channels_playing[channel] = sfxinfo;
 
     // set separation, etc.
- 
+
     I_SDL_UpdateSoundParams(channel, vol, sep);
 
     return channel;
@@ -903,7 +903,7 @@ static boolean I_SDL_SoundIsPlaying(int handle)
     return Mix_Playing(handle);
 }
 
-// 
+//
 // Periodically called to update the sound system
 //
 
@@ -919,14 +919,14 @@ static void I_SDL_UpdateSound(void)
         {
             // Sound has finished playing on this channel,
             // but sound data has not been released to cache
-            
+
             ReleaseSoundOnChannel(i);
         }
     }
 }
 
 static void I_SDL_ShutdownSound(void)
-{    
+{
     if (!sound_initialized)
     {
         return;
@@ -1049,7 +1049,7 @@ static boolean I_SDL_InitSound(boolean _use_sfx_prefix)
     return true;
 }
 
-static snddevice_t sound_sdl_devices[] = 
+static snddevice_t sound_sdl_devices[] =
 {
     SNDDEVICE_SB,
     SNDDEVICE_PAS,
@@ -1059,7 +1059,7 @@ static snddevice_t sound_sdl_devices[] =
     SNDDEVICE_AWE32,
 };
 
-sound_module_t DG_sound_module = 
+sound_module_t DG_sound_module =
 {
     sound_sdl_devices,
     arrlen(sound_sdl_devices),
@@ -1073,4 +1073,3 @@ sound_module_t DG_sound_module =
     I_SDL_SoundIsPlaying,
     I_SDL_PrecacheSounds,
 };
-

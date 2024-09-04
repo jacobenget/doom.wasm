@@ -67,4 +67,3 @@ void I_UpdateJoystick(void);
 void I_BindJoystickVariables(void);
 
 #endif /* #ifndef __I_JOYSTICK__ */
-

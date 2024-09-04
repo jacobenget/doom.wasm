@@ -14,7 +14,7 @@
 //
 // DESCRIPTION:
 //	Globally defined strings.
-// 
+//
 
 
 
@@ -67,7 +67,3 @@ char* endmsg[] =
 };
 
 #endif
-
-  
-
-

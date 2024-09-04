@@ -37,4 +37,3 @@ void SHA1_UpdateInt32(sha1_context_t *context, unsigned int val);
 void SHA1_UpdateString(sha1_context_t *context, char *str);
 
 #endif /* #ifndef __SHA1_H__ */
-

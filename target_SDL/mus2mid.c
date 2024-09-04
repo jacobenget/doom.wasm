@@ -53,7 +53,7 @@ typedef enum
 } midievent;
 
 // Structure to hold MUS file header
-typedef struct 
+typedef struct
 {
     byte id[4];
     unsigned short scorelength;
@@ -734,4 +734,3 @@ int main(int argc, char *argv[])
 }
 
 #endif
-

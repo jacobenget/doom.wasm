@@ -41,4 +41,3 @@ void W_NWTDashMerge(char *filename);
 void W_PrintDirectory(void);
 
 #endif /* #ifndef W_MERGE_H */
-

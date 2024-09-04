@@ -59,4 +59,3 @@ fixed_t FixedDiv(fixed_t a, fixed_t b)
 	return (fixed_t) result;
     }
 }
-

@@ -179,7 +179,7 @@ int I_CDMusFirstTrack(void)
 
     // Find the first audio track.
 
-    for (i=0; i<cd_handle->numtracks; ++i) 
+    for (i=0; i<cd_handle->numtracks; ++i)
     {
         if (cd_handle->track[i].type == SDL_AUDIO_TRACK)
         {
@@ -240,4 +240,3 @@ int I_CDMusTrackLength(int track_num)
 	return 0;
 #endif
 }
-

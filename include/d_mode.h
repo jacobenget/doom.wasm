@@ -95,4 +95,3 @@ boolean D_IsEpisodeMap(GameMission_t mission);
 char *D_GameMissionString(GameMission_t mission);
 
 #endif /* #ifndef __D_MODE__ */
-

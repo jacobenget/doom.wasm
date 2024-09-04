@@ -78,4 +78,3 @@ extern boolean singletics;
 extern int gametic, ticdup;
 
 #endif
-

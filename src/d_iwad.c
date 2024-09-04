@@ -80,7 +80,7 @@ static void AddIWADDir(char *dir)
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-typedef struct 
+typedef struct
 {
     HKEY root;
     char *path;
@@ -89,7 +89,7 @@ typedef struct
 
 #define UNINSTALLER_STRING "\\uninstl.exe /S "
 
-// Keys installed by the various CD editions.  These are actually the 
+// Keys installed by the various CD editions.  These are actually the
 // commands to invoke the uninstaller and look like this:
 //
 // C:\Program Files\Path\uninstl.exe /S C:\Program Files\Path
@@ -154,7 +154,7 @@ static registry_value_t collectors_edition_value =
 
 // Subdirectories of the above install path, where IWADs are installed.
 
-static char *collectors_edition_subdirs[] = 
+static char *collectors_edition_subdirs[] =
 {
     "Doom2",
     "Final Doom",
@@ -407,7 +407,7 @@ static boolean DirIsFile(char *path, char *filename)
 
 static char *CheckDirectoryHasIWAD(char *dir, char *iwadname)
 {
-    char *filename; 
+    char *filename;
 
     // As a special case, the "directory" may refer directly to an
     // IWAD file if the path comes from DOOMWADDIR or DOOMWADPATH.
@@ -449,7 +449,7 @@ static char *SearchDirectoryForIWAD(char *dir, int mask, GameMission_t *mission)
     char *filename;
     size_t i;
 
-    for (i=0; i<arrlen(iwads); ++i) 
+    for (i=0; i<arrlen(iwads); ++i)
     {
         if (((1 << iwads[i].mission) & mask) == 0)
         {
@@ -545,7 +545,7 @@ static void AddDoomWadPath(void)
         {
             // Break at the separator and store the right hand side
             // as another iwad dir
-  
+
             *p = '\0';
             p += 1;
 
@@ -585,7 +585,7 @@ static void BuildIWADDirList(void)
     if (doomwaddir != NULL)
     {
         AddIWADDir(doomwaddir);
-    }        
+    }
 
     // Add dirs from DOOMWADPATH
 
@@ -623,13 +623,13 @@ static void BuildIWADDirList(void)
 
 //
 // Searches WAD search paths for an WAD with a specific filename.
-// 
+//
 
 char *D_FindWADByName(char *name)
 {
     char *path;
     int i;
-    
+
     // Absolute path?
 
     if (M_FileExists(name))
@@ -728,7 +728,7 @@ char *D_FindIWAD(int mask, GameMission_t *mission)
         {
             I_Error("IWAD file '%s' not found!", iwadfile);
         }
-        
+
         *mission = IdentifyIWADByName(result, mask);
     }
     else
@@ -740,7 +740,7 @@ char *D_FindIWAD(int mask, GameMission_t *mission)
         result = NULL;
 
         BuildIWADDirList();
-    
+
         for (i=0; result == NULL && i<num_iwad_dirs; ++i)
         {
             result = SearchDirectoryForIWAD(iwad_dirs[i], mask, mission);
@@ -845,4 +845,3 @@ char *D_SuggestGameName(GameMission_t mission, GameMode_t mode)
 
     return "Unknown game?";
 }
-

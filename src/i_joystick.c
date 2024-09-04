@@ -356,4 +356,3 @@ void I_BindJoystickVariables(void)
         M_BindVariable(name, &joystick_physical_buttons[i]);
     }
 }
-

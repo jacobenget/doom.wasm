@@ -50,7 +50,7 @@ event_t *D_PopEvent(void)
     {
         return NULL;
     }
-    
+
     result = &events[eventtail];
 
     // Advance to the next event in the queue.
@@ -59,5 +59,3 @@ event_t *D_PopEvent(void)
 
     return result;
 }
-
-

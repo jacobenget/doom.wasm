@@ -29,18 +29,18 @@
 int key_right = KEY_RIGHTARROW;
 int key_left = KEY_LEFTARROW;
 int key_up = KEY_UPARROW;
-int key_down = KEY_DOWNARROW; 
+int key_down = KEY_DOWNARROW;
 int key_strafeleft = KEY_STRAFE_L;
 int key_straferight = KEY_STRAFE_R;
 int key_fire = KEY_FIRE;
 int key_use = KEY_USE;
 int key_strafe = KEY_RALT;
-int key_speed = KEY_RSHIFT; 
+int key_speed = KEY_RSHIFT;
 
-// 
+//
 // Heretic keyboard controls
 //
- 
+
 int key_flyup = KEY_PGUP;
 int key_flydown = KEY_INS;
 int key_flycenter = KEY_HOME;
@@ -192,12 +192,12 @@ int joybnextweapon = -1;
 
 int joybmenu = -1;
 
-// Control whether if a mouse button is double clicked, it acts like 
+// Control whether if a mouse button is double clicked, it acts like
 // "use" has been pressed
 
 int dclick_use = 1;
- 
-// 
+
+//
 // Bind all of the common controls used by Doom and all other games.
 //
 
@@ -395,4 +395,3 @@ void M_ApplyPlatformDefaults(void)
 {
     // no-op. Add your platform-specific patches here.
 }
-

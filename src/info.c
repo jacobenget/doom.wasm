@@ -4659,4 +4659,3 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 	S_NULL		// raisestate
     }
 };
-

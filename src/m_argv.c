@@ -262,4 +262,3 @@ char *M_GetExecutableName(void)
         return sep + 1;
     }
 }
-

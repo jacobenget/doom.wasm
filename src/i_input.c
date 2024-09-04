@@ -282,13 +282,13 @@ void I_GetEvent(void)
     int pressed;
     unsigned char key;
 
-    
+
 	while (DG_GetKey(&pressed, &key))
     {
         UpdateShiftStatus(pressed, key);
 
         // process event
-        
+
         if (pressed)
         {
             // data1 has the key pressed, data2 has the character
@@ -338,4 +338,3 @@ void I_GetEvent(void)
 void I_InitInput(void)
 {
 }
-

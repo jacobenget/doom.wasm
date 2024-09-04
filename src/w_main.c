@@ -34,7 +34,7 @@ boolean W_ParseCommandLine(void)
 
 #ifdef FEATURE_WAD_MERGE
 
-    // Merged PWADs are loaded first, because they are supposed to be 
+    // Merged PWADs are loaded first, because they are supposed to be
     // modified IWADs.
 
     //!
@@ -89,7 +89,7 @@ boolean W_ParseCommandLine(void)
             W_NWTDashMerge(filename);
         }
     }
-    
+
     // Add flats
 
     //!
@@ -195,4 +195,3 @@ boolean W_ParseCommandLine(void)
 
     return modifiedgame;
 }
-

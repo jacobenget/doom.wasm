@@ -47,8 +47,3 @@ M_AddToBox
     else if (y>box[BOXTOP])
 	box[BOXTOP] = y;
 }
-
-
-
-
-

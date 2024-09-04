@@ -35,9 +35,9 @@ extern wad_file_class_t win32_wad_file;
 
 #ifdef HAVE_MMAP
 extern wad_file_class_t posix_wad_file;
-#endif 
+#endif
 
-static wad_file_class_t *wad_file_classes[] = 
+static wad_file_class_t *wad_file_classes[] =
 {
 /*
 #ifdef _WIN32
@@ -92,4 +92,3 @@ size_t W_Read(wad_file_t *wad, unsigned int offset,
 {
     return wad->file_class->Read(wad, offset, buffer, buffer_len);
 }
-

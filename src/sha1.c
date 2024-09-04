@@ -316,4 +316,3 @@ void SHA1_UpdateString(sha1_context_t *context, char *str)
 {
     SHA1_Update(context, (byte *) str, strlen(str) + 1);
 }
-
