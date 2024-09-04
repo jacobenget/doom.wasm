@@ -16,7 +16,6 @@
 //      Pixel-doubling scale up functions.
 //
 
-
 #ifndef __I_SCALE__
 #define __I_SCALE__
 

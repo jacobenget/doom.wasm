@@ -32,4 +32,4 @@ char *NET_AddrToString(net_addr_t *addr);
 void NET_FreeAddress(net_addr_t *addr);
 net_addr_t *NET_ResolveAddress(net_context_t *context, char *address);
 
-#endif  /* #ifndef NET_IO_H */
+#endif /* #ifndef NET_IO_H */
