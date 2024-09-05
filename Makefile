@@ -6,12 +6,19 @@ else
 	VB=@
 endif
 
-DEV_PYTHON_VIRTUAL_ENV = .dev_virtualenv
-
 
 ##########################################################
 # Targets for managing the local Python dev environment
 ##########################################################
+
+DEV_PYTHON_VIRTUAL_ENV = .dev_virtualenv
+
+dev-init: | ${DEV_PYTHON_VIRTUAL_ENV}
+	@echo [Installing pre-commit hooks]
+	${VB}( \
+		source ${DEV_PYTHON_VIRTUAL_ENV}/bin/activate; \
+		pre-commit install; \
+	)
 
 ${DEV_PYTHON_VIRTUAL_ENV}: dev_requirements.txt
 	@echo [\(Re\)Creating Python virtual environment at '${DEV_PYTHON_VIRTUAL_ENV}/' for development needs]
@@ -21,8 +28,6 @@ ${DEV_PYTHON_VIRTUAL_ENV}: dev_requirements.txt
 		source ${DEV_PYTHON_VIRTUAL_ENV}/bin/activate; \
 		echo [Initialize dev Python virtual environment with all needed dependencies]; \
 		python -m pip install -r dev_requirements.txt; \
-		echo [Installing pre-commit hooks]; \
-		pre-commit install; \
 	)
 
 # Any changes made to the local Python dev environment must be reflected in dev_requirements.txt.
