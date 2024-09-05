@@ -8,8 +8,6 @@ endif
 
 DEV_PYTHON_VIRTUAL_ENV = .dev_virtualenv
 
-.PHONY: generate-dev-requirements run-precommit-on-all-files run-precommit-on-staged-files
-
 
 ##########################################################
 # Targets for managing the local Python dev environment
@@ -52,3 +50,6 @@ run-precommit-on-staged-files: | ${DEV_PYTHON_VIRTUAL_ENV}
 		source ${DEV_PYTHON_VIRTUAL_ENV}/bin/activate; \
 		pre-commit run; \
 	)
+
+
+.PHONY: generate-dev-requirements run-precommit-on-all-files run-precommit-on-staged-files
