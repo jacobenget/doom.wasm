@@ -27,6 +27,8 @@ ${DEV_PYTHON_VIRTUAL_ENV}: dev_requirements.txt
 		pre-commit install; \
 	)
 
+# Any changes made to the local Python dev environment must be reflected in dev_requirements.txt.
+# Updating dev_requirements.txt to match the package versions being used in the Python dev environment is done via this target:
 generate-dev-requirements: | ${DEV_PYTHON_VIRTUAL_ENV}
 	@echo "# FYI: This file was created by calling 'make $@'" > dev_requirements.txt
 	${VB}( \
