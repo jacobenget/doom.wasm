@@ -27,8 +27,10 @@ OBJS_SDL += $(addprefix $(OUTPUT_DIR_SDL)/, $(SRC_DOOM_SDL))
 # to maximize the robustness of the SDL version of Doom we're using here as a testbed for changes.
 SDL_BUILD_DIR = build
 SDL_INSTALLATION_DIR = installation
-SDL_INSTALL = SDL/$(SDL_BUILD_DIR)/$(SDL_INSTALLATION_DIR)
-SDL_MIXER_INSTALL = SDL_mixer/$(SDL_BUILD_DIR)/$(SDL_INSTALLATION_DIR)
+SDL_FOLDER = .SDL
+SDL_MIXER_FOLDER = .SDL_mixer
+SDL_INSTALL = $(SDL_FOLDER)/$(SDL_BUILD_DIR)/$(SDL_INSTALLATION_DIR)
+SDL_MIXER_INSTALL = $(SDL_MIXER_FOLDER)/$(SDL_BUILD_DIR)/$(SDL_INSTALLATION_DIR)
 
 SDL_CFLAGS = -I$(SDL_INSTALL)/include/SDL2 -I$(SDL_MIXER_INSTALL)/include/SDL2 -D_THREAD_SAFE
 SDL_LIBS = -L$(SDL_INSTALL)/lib -L$(SDL_MIXER_INSTALL)/lib -lSDL2 -lSDL2_mixer
@@ -40,8 +42,8 @@ all: $(OUTPUT)
 
 # Retreive, build, and install a version of SDL that has been found to work for the needs of this project
 build-SDL:
-	git clone git@github.com:libsdl-org/SDL.git --branch release-2.30.7 --depth 1; \
-	cd SDL; \
+	git clone git@github.com:libsdl-org/SDL.git --branch release-2.30.7 --depth 1 $(SDL_FOLDER); \
+	cd $(SDL_FOLDER); \
 	mkdir -p $(SDL_BUILD_DIR)/$(SDL_INSTALLATION_DIR); \
 	cd $(SDL_BUILD_DIR); \
 	CC=$(CC) ../configure --prefix=$(shell pwd)/$(SDL_INSTALL); \
@@ -51,8 +53,8 @@ build-SDL:
 # Retreive, build, and install a version of SDL_mixer that has been found to work for the needs of this project
 # NOTE: to build SDL_mixer one must have first built SDL. This dependency isn't explicitly called out here via 'make' targets because build-SDL is a PHONY target.
 build-SDL_mixer:
-	git clone git@github.com:libsdl-org/SDL_mixer.git --branch release-2.0.4 --depth 1; \
-	cd SDL_mixer; \
+	git clone git@github.com:libsdl-org/SDL_mixer.git --branch release-2.0.4 --depth 1 $(SDL_MIXER_FOLDER); \
+	cd $(SDL_MIXER_FOLDER); \
 	mkdir -p $(SDL_BUILD_DIR)/$(SDL_INSTALLATION_DIR); \
 	cd $(SDL_BUILD_DIR); \
 	CC=$(CC) ../configure --prefix=$(shell pwd)/$(SDL_MIXER_INSTALL) --with-sdl-prefix=$(shell pwd)/$(SDL_INSTALL); \
