@@ -1,7 +1,7 @@
 
 # VERBOSE can be set to 1 to echo all commands performed by this makefile
 ifeq ($(VERBOSE),1)
-	VB=''
+	VB=
 else
 	VB=@
 endif
