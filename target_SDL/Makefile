@@ -36,7 +36,7 @@ SDL_CFLAGS = -I$(SDL_INSTALL)/include/SDL2 -I$(SDL_MIXER_INSTALL)/include/SDL2 -
 SDL_LIBS = -L$(SDL_INSTALL)/lib -L$(SDL_MIXER_INSTALL)/lib -lSDL2 -lSDL2_mixer
 
 
-.PHONY: clean build-SDL build-SDL_mixer run
+.PHONY: clean build-SDL build-SDL_mixer run print
 
 all: $(OUTPUT)
 
