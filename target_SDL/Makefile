@@ -36,12 +36,12 @@ SDL_CFLAGS = -I$(SDL_INSTALL)/include/SDL2 -I$(SDL_MIXER_INSTALL)/include/SDL2 -
 SDL_LIBS = -L$(SDL_INSTALL)/lib -L$(SDL_MIXER_INSTALL)/lib -lSDL2 -lSDL2_mixer
 
 
-.PHONY: clean build-SDL build-SDL_mixer run print
+.PHONY: clean run print
 
 all: $(OUTPUT)
 
 # Retreive, build, and install a version of SDL that has been found to work for the needs of this project
-build-SDL:
+$(SDL_INSTALL):
 	git clone git@github.com:libsdl-org/SDL.git --branch release-2.30.7 --depth 1 $(SDL_FOLDER); \
 	cd $(SDL_FOLDER); \
 	mkdir -p $(SDL_BUILD_DIR)/$(SDL_INSTALLATION_DIR); \
@@ -52,7 +52,7 @@ build-SDL:
 
 # Retreive, build, and install a version of SDL_mixer that has been found to work for the needs of this project
 # NOTE: to build SDL_mixer one must have first built SDL. This dependency isn't explicitly called out here via 'make' targets because build-SDL is a PHONY target.
-build-SDL_mixer:
+$(SDL_MIXER_INSTALL): | $(SDL_INSTALL)
 	git clone git@github.com:libsdl-org/SDL_mixer.git --branch release-2.0.4 --depth 1 $(SDL_MIXER_FOLDER); \
 	cd $(SDL_MIXER_FOLDER); \
 	mkdir -p $(SDL_BUILD_DIR)/$(SDL_INSTALLATION_DIR); \
@@ -64,7 +64,7 @@ build-SDL_mixer:
 clean:
 	rm -rf $(OUTPUT_DIR)
 
-$(OUTPUT): $(OBJS) $(OBJS_SDL)
+$(OUTPUT): $(OBJS) $(OBJS_SDL) | $(SDL_INSTALL) $(SDL_MIXER_INSTALL)
 	@echo [Linking $@]
 	$(VB)$(CC) $(CFLAGS) $(SDL_CFLAGS) $(LDFLAGS) $(OBJS) $(OBJS_SDL) -o $@ $(LIBS) $(SDL_LIBS)
 
@@ -78,11 +78,11 @@ $(OBJS_SDL): | $(OUTPUT_DIR_SDL)
 $(OUTPUT_DIR_SDL):
 	$(VB)mkdir -p $@
 
-$(OUTPUT_DIR)/%.o: ../src/%.c
+$(OUTPUT_DIR)/%.o: ../src/%.c | $(SDL_INSTALL) $(SDL_MIXER_INSTALL)
 	@echo [Compiling $<]
 	$(VB)$(CC) $(CFLAGS) $(SDL_CFLAGS) -c $< -o $@
 
-$(OUTPUT_DIR_SDL)/%.o: %.c
+$(OUTPUT_DIR_SDL)/%.o: %.c | $(SDL_INSTALL) $(SDL_MIXER_INSTALL)
 	@echo [Compiling $<]
 	$(VB)$(CC) $(CFLAGS) $(SDL_CFLAGS) -c $< -o $@
 
