@@ -1,1 +1,2 @@
-**/build/**
+# Ignore the contents of any directory named 'build'
+**/build/
