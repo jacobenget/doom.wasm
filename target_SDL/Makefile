@@ -9,7 +9,7 @@ endif
 CC = clang  # gcc or g++
 CFLAGS += -DFEATURE_SOUND -I$(shell pwd)/../include
 LDFLAGS +=
-LIBS += -lm -lc $(SDL_LIBS)
+LIBS += -lm -lc
 
 # subdirectory for all produced objects/executables
 OUTPUT_DIR = build
