@@ -21,3 +21,9 @@ repos:
         language: system
         pass_filenames: false
         always_run: true
+    -   id: doom-wasm-interface-doc
+        name: Generate doom.wasm.interface.txt
+        entry: make doom.wasm.interface.txt
+        language: system
+        pass_filenames: false
+        always_run: true
