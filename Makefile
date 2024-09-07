@@ -20,9 +20,8 @@ dev-init: | ${DEV_PYTHON_VIRTUAL_ENV}
 		pre-commit install; \
 	)
 
-${DEV_PYTHON_VIRTUAL_ENV}: dev_requirements.txt
-	@echo [\(Re\)Creating Python virtual environment at '${DEV_PYTHON_VIRTUAL_ENV}/' for development needs]
-	${VB}rm -fr ${DEV_PYTHON_VIRTUAL_ENV}
+${DEV_PYTHON_VIRTUAL_ENV}:
+	@echo [Creating Python virtual environment at '${DEV_PYTHON_VIRTUAL_ENV}/' for development needs]
 	${VB}python3 -m venv ${DEV_PYTHON_VIRTUAL_ENV}
 	${VB}( \
 		source ${DEV_PYTHON_VIRTUAL_ENV}/bin/activate; \
@@ -33,7 +32,21 @@ ${DEV_PYTHON_VIRTUAL_ENV}: dev_requirements.txt
 # Any changes made to the local Python dev environment must be reflected in dev_requirements.txt.
 # Updating dev_requirements.txt to match the package versions being used in the Python dev environment is done via this target:
 generate-dev-requirements: | ${DEV_PYTHON_VIRTUAL_ENV}
-	@echo "# FYI: This file was created by calling 'make $@'" > dev_requirements.txt
+	${VB}> dev_requirements.txt
+	@echo "##################################################################################################" >> dev_requirements.txt
+	@echo "#" >> dev_requirements.txt
+	@echo "# This file is used to manage which Python modules are installed in the virtual environment that lives at ${DEV_PYTHON_VIRTUAL_ENV}/" >> dev_requirements.txt
+	@echo "#" >> dev_requirements.txt
+	@echo "# WARNING: This file was auto-generated, likely by calling something similar to 'make $@'." >> dev_requirements.txt
+	@echo "# Any manual edits made to this file will probably be clobbered!" >> dev_requirements.txt
+	@echo "#" >> dev_requirements.txt
+	@echo "# If you wish to change which Python modules are installed in the virtual environment at ${DEV_PYTHON_VIRTUAL_ENV}/" >> dev_requirements.txt
+	@echo "# you should, instead, just manually install/uninstall modules in that virtual environment as you see fit" >> dev_requirements.txt
+	@echo "# (see here if you're unsure of how to interact with Python virtual environment: https://docs.python.org/3/tutorial/venv.html)" >> dev_requirements.txt
+	@echo "# and then manually run 'make $@'." >> dev_requirements.txt
+	@echo "#" >> dev_requirements.txt
+	@echo "##################################################################################################" >> dev_requirements.txt
+	@echo "" >> dev_requirements.txt
 	${VB}( \
 		source ${DEV_PYTHON_VIRTUAL_ENV}/bin/activate; \
 		python -m pip freeze >> dev_requirements.txt; \
