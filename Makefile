@@ -20,6 +20,13 @@ dev-init: | ${DEV_PYTHON_VIRTUAL_ENV}
 		pre-commit install; \
 	)
 
+dev-clean:
+	${VB}( \
+		source ${DEV_PYTHON_VIRTUAL_ENV}/bin/activate; \
+		pre-commit uninstall; \
+	)
+	${VB} rm -fr ${DEV_PYTHON_VIRTUAL_ENV}
+
 ${DEV_PYTHON_VIRTUAL_ENV}:
 	@echo [Creating Python virtual environment at '${DEV_PYTHON_VIRTUAL_ENV}/' for development needs]
 	${VB}python3 -m venv ${DEV_PYTHON_VIRTUAL_ENV}
