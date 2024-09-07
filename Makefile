@@ -12,6 +12,8 @@ endif
 ##########################################################
 
 DEV_PYTHON_VIRTUAL_ENV = .dev_virtualenv
+# Dependencies in Python dev environment are managed via a Requirements file, stored as dev_requirements.txt
+DEV_REQUIREMENTS_TXT = dev_requirements.txt
 
 dev-init: | ${DEV_PYTHON_VIRTUAL_ENV}
 	@echo [Installing pre-commit hooks]
@@ -33,30 +35,31 @@ ${DEV_PYTHON_VIRTUAL_ENV}:
 	${VB}( \
 		source ${DEV_PYTHON_VIRTUAL_ENV}/bin/activate; \
 		echo [Initialize dev Python virtual environment with all needed dependencies]; \
-		python -m pip install -r dev_requirements.txt; \
+		python -m pip install -r ${DEV_REQUIREMENTS_TXT}; \
 	)
 
-# Any changes made to the local Python dev environment must be reflected in dev_requirements.txt.
-# Updating dev_requirements.txt to match the package versions being used in the Python dev environment is done via this target:
+# Generate/update dev requirements file to match the package versions being used in the Python dev environment
+# (this is done via a .PHONY target because it's not clear how we could direct 'make' to determine when this
+# file is truly out of date, so instead we just always assume this file is out of date)
 generate-dev-requirements: | ${DEV_PYTHON_VIRTUAL_ENV}
-	${VB}> dev_requirements.txt
-	@echo "##################################################################################################" >> dev_requirements.txt
-	@echo "#" >> dev_requirements.txt
-	@echo "# This file is used to manage which Python modules are installed in the virtual environment that lives at ${DEV_PYTHON_VIRTUAL_ENV}/" >> dev_requirements.txt
-	@echo "#" >> dev_requirements.txt
-	@echo "# WARNING: This file was auto-generated, likely by calling something similar to 'make $@'." >> dev_requirements.txt
-	@echo "# Any manual edits made to this file will probably be clobbered!" >> dev_requirements.txt
-	@echo "#" >> dev_requirements.txt
-	@echo "# If you wish to change which Python modules are installed in the virtual environment at ${DEV_PYTHON_VIRTUAL_ENV}/" >> dev_requirements.txt
-	@echo "# you should, instead, just manually install/uninstall modules in that virtual environment as you see fit" >> dev_requirements.txt
-	@echo "# (see here if you're unsure of how to interact with Python virtual environment: https://docs.python.org/3/tutorial/venv.html)" >> dev_requirements.txt
-	@echo "# and then manually run 'make $@'." >> dev_requirements.txt
-	@echo "#" >> dev_requirements.txt
-	@echo "##################################################################################################" >> dev_requirements.txt
-	@echo "" >> dev_requirements.txt
+	${VB}> ${DEV_REQUIREMENTS_TXT}
+	@echo "##################################################################################################" >> ${DEV_REQUIREMENTS_TXT}
+	@echo "#" >> ${DEV_REQUIREMENTS_TXT}
+	@echo "# This file is used to manage which Python modules are installed in the virtual environment that lives at ${DEV_PYTHON_VIRTUAL_ENV}/" >> ${DEV_REQUIREMENTS_TXT}
+	@echo "#" >> ${DEV_REQUIREMENTS_TXT}
+	@echo "# WARNING: This file was auto-generated, likely by calling something similar to 'make $@'." >> ${DEV_REQUIREMENTS_TXT}
+	@echo "# Any manual edits made to this file will probably be clobbered!" >> ${DEV_REQUIREMENTS_TXT}
+	@echo "#" >> ${DEV_REQUIREMENTS_TXT}
+	@echo "# If you wish to change which Python modules are installed in the virtual environment at ${DEV_PYTHON_VIRTUAL_ENV}/" >> ${DEV_REQUIREMENTS_TXT}
+	@echo "# you should, instead, just manually install/uninstall modules in that virtual environment as you see fit" >> ${DEV_REQUIREMENTS_TXT}
+	@echo "# (see here if you're unsure of how to interact with Python virtual environment: https://docs.python.org/3/tutorial/venv.html)" >> ${DEV_REQUIREMENTS_TXT}
+	@echo "# and then manually run 'make $@'." >> ${DEV_REQUIREMENTS_TXT}
+	@echo "#" >> ${DEV_REQUIREMENTS_TXT}
+	@echo "##################################################################################################" >> ${DEV_REQUIREMENTS_TXT}
+	@echo "" >> ${DEV_REQUIREMENTS_TXT}
 	${VB}( \
 		source ${DEV_PYTHON_VIRTUAL_ENV}/bin/activate; \
-		python -m pip freeze >> dev_requirements.txt; \
+		python -m pip freeze >> ${DEV_REQUIREMENTS_TXT}; \
 	)
 
 
