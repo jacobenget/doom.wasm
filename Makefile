@@ -7,6 +7,76 @@ else
 endif
 
 
+PATH_TO_THIS_MAKEFILE := $(abspath $(lastword $(MAKEFILE_LIST)))
+DIR_CONTAINING_THIS_MAKEFILE := $(dir PATH_TO_THIS_MAKEFILE)
+
+
+###########################################################################
+# Targets for building a WebAssembly module from the Doom source code
+###########################################################################
+
+CFLAGS += --target=wasm32-unknown-wasi -Wall -g -Os
+LDFLAGS +=
+LIBS += -lm -lc
+
+OUTPUT_DIR = build
+OUTPUT_NAME = doom.wasm
+OUTPUT = $(OUTPUT_DIR)/$(OUTPUT_NAME)
+
+SRC_DOOM = dummy.o am_map.o doomdef.o doomstat.o dstrings.o d_event.o d_items.o d_iwad.o d_loop.o d_main.o d_mode.o d_net.o f_finale.o f_wipe.o g_game.o hu_lib.o hu_stuff.o info.o i_cdmus.o i_endoom.o i_joystick.o i_scale.o i_sound.o i_system.o i_timer.o memio.o m_argv.o m_bbox.o m_cheat.o m_config.o m_controls.o m_fixed.o m_menu.o m_misc.o m_random.o p_ceilng.o p_doors.o p_enemy.o p_floor.o p_inter.o p_lights.o p_map.o p_maputl.o p_mobj.o p_plats.o p_pspr.o p_saveg.o p_setup.o p_sight.o p_spec.o p_switch.o p_telept.o p_tick.o p_user.o r_bsp.o r_data.o r_draw.o r_main.o r_plane.o r_segs.o r_sky.o r_things.o sha1.o sounds.o statdump.o st_lib.o st_stuff.o s_sound.o tables.o v_video.o wi_stuff.o w_checksum.o w_file.o w_wad.o z_zone.o w_file_stdc.o i_input.o i_video.o doomgeneric.o
+OBJS += $(addprefix $(OUTPUT_DIR)/, $(SRC_DOOM))
+
+# The WASI SDK (https://github.com/WebAssembly/wasi-sdk) conventiently packages up all that's needed to use Clang to compile to WebAssembly,
+# and what's even better is that they provide a Docker image with all needed tools already installed and configured: https://github.com/WebAssembly/wasi-sdk?tab=readme-ov-file#docker-image
+RUN_IN_WASI_SDK_DOCKER_IMAGE = docker run --rm -v $(DIR_CONTAINING_THIS_MAKEFILE):/repo -w /repo ghcr.io/webassembly/wasi-sdk:wasi-sdk-24
+
+
+all: doom
+
+clean:
+	rm -rf $(OUTPUT_DIR)
+
+# Provide a target that builds the main artifact by immediately delegating to the WASI SDK docker image to build everything needed.
+# This target exists as a way to save time when the main artifact has to be built from scratch.
+# It saves time by not having to step into and out of a docker container each time one dependency of the main artifact has to be built.
+# One sampling of the time difference between this approach and the alternative `make $(OUTPUT)` showed a savings of around 30% (~2 mins vs. ~3 mins) when building from scratch
+doom:
+	@echo [Delegating to WASI SDK Docker image]
+	$(VB)${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $(OUTPUT)
+
+# Link all object files together to produce the needed artifact, but make sure that linking happens via the WASI SDK.
+# We do this by detecting when the literal phrase 'wasi' DOESN'T appear in the path to the compiler
+# (e.g. you're running locally and aren't configured to use a local WASI SDK installation)
+# and then rerunning this `make` target in a docker container based on the WASI SDK docker image.
+$(OUTPUT): $(OBJS)
+	$(VB)if echo "$(CC)" | grep -q "wasi"; then \
+		echo [Linking $@]; \
+		$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) -s -o $@ $(LIBS); \
+	else \
+		echo [Delegating to WASI SDK Docker image]; \
+		${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $@; \
+	fi
+
+$(OBJS): | $(OUTPUT_DIR)
+
+$(OUTPUT_DIR):
+	@echo [Creating output folder $@]
+	$(VB)mkdir -p $(OUTPUT_DIR)
+
+# Produce object files by compiling the related source file, but make sure that compiling happens via the WASI SDK.
+# We do this by detecting when the literal phrase 'wasi' DOESN'T appear in the path to the compiler
+# (e.g. you're running locally and aren't configured to use a local WASI SDK installation)
+# and then rerunning this `make` target in a docker container based on the WASI SDK docker image.
+$(OUTPUT_DIR)/%.o:	src/%.c
+	$(VB)if echo "$(CC)" | grep -q "wasi"; then \
+		echo [Compiling $<]; \
+		$(CC) $(CFLAGS) -I$(DIR_CONTAINING_THIS_MAKEFILE)/include -c $< -o $@; \
+	else \
+		echo [Delegating to WASI SDK Docker image]; \
+		${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $@; \
+	fi
+
+
 ##########################################################
 # Targets for managing the local Python dev environment
 ##########################################################
@@ -80,4 +150,4 @@ run-precommit-on-staged-files: | ${DEV_PYTHON_VIRTUAL_ENV}
 	)
 
 
-.PHONY: generate-dev-requirements run-precommit-on-all-files run-precommit-on-staged-files
+.PHONY: doom generate-dev-requirements run-precommit-on-all-files run-precommit-on-staged-files
