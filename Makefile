@@ -76,6 +76,20 @@ $(OUTPUT_DIR)/%.o:	src/%.c
 		${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $@; \
 	fi
 
+# Produce a text file that describes the imports and exports of the Doom WebAssembly module.
+$(OUTPUT_NAME).interface.txt: $(OUTPUT) utils/print-interface-of-wasm-module.mjs
+	$(VB) > $@
+	$(VB)echo "##############################################################################" >> $@
+	$(VB)echo "#" >> $@
+	$(VB)echo "# Below lies the interface to the WebAssembly module located at '$(OUTPUT)'" >> $@
+	$(VB)echo "#" >> $@
+	$(VB)echo "# WARNING: This file was auto-generated, likely by calling something similar to 'make $@'." >> $@
+	$(VB)echo "# Any manual edits made to this file will probably be clobbered!" >> $@
+	$(VB)echo "#" >> $@
+	$(VB)echo "##############################################################################" >> $@
+	$(VB)echo "" >> $@
+	$(VB)docker run --rm -v $(DIR_CONTAINING_THIS_MAKEFILE):/repo -w /repo node:20.17.0 node utils/print-interface-of-wasm-module.mjs $(OUTPUT) >> $@
+
 
 ##########################################################
 # Targets for managing the local Python dev environment

@@ -1,0 +1,23 @@
+##############################################################################
+#
+# Below lies the interface to the WebAssembly module located at 'build/doom.wasm'
+#
+# WARNING: This file was auto-generated, likely by calling something similar to 'make doom.wasm.interface.txt'.
+# Any manual edits made to this file will probably be clobbered!
+#
+##############################################################################
+
+imports:
+  function wasi_snapshot_preview1.args_get
+  function wasi_snapshot_preview1.args_sizes_get
+  function wasi_snapshot_preview1.fd_close
+  function wasi_snapshot_preview1.fd_fdstat_get
+  function wasi_snapshot_preview1.fd_prestat_dir_name
+  function wasi_snapshot_preview1.fd_prestat_get
+  function wasi_snapshot_preview1.fd_seek
+  function wasi_snapshot_preview1.fd_write
+  function wasi_snapshot_preview1.proc_exit
+
+exports:
+  function _start
+  memory memory
