@@ -11,7 +11,7 @@ imports:
   function env.W_ParseCommandLine()
   function runtimeControl.getTicksMs()
   function runtimeControl.sleepMs(i32)
-  function ui.drawFrame()
+  function ui.drawFrame(i32)
   function ui.getKey(i32, i32)
   function ui.onGameInit()
   function ui.setWindowTitle(i32)

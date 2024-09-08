@@ -10,7 +10,7 @@
 // *****************************************************************************
 
 __attribute__((import_module("ui"))) void onGameInit();
-__attribute__((import_module("ui"))) void drawFrame();
+__attribute__((import_module("ui"))) void drawFrame(uint32_t *screenBuffer);
 __attribute__((import_module("ui"))) int getKey(int *pressed,
                                                 unsigned char *key);
 __attribute__((import_module("ui"))) void setWindowTitle(const char *title);
@@ -37,7 +37,7 @@ __attribute__((visibility("default"))) void tickGame() { doomgeneric_Tick(); }
 
 void DG_Init() { onGameInit(); }
 
-void DG_DrawFrame() { drawFrame(); }
+void DG_DrawFrame() { drawFrame(DG_ScreenBuffer); }
 
 int DG_GetKey(int *pressed, unsigned char *key) { return getKey(pressed, key); }
 
