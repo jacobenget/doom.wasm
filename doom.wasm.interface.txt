@@ -15,7 +15,6 @@ imports:
   function env.DG_SetWindowTitle(i32)
   function env.DG_SleepMs(i32)
   function env.W_ParseCommandLine()
-  function env.system(i32)
   function wasi_snapshot_preview1.fd_close(i32)
   function wasi_snapshot_preview1.fd_fdstat_get(i32, i32)
   function wasi_snapshot_preview1.fd_fdstat_set_flags(i32, i32)
