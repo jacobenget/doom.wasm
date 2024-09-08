@@ -4,3 +4,6 @@
 # Ignore the contents of any virtual environment
 /.dev_virtualenvs/**
 !/.dev_virtualenvs/python_dev_requirements.txt
+
+# Ignore any hard links to the script which activates the Rust virtual env
+/**/.rust_virtual_env_activate

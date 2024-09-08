@@ -97,18 +97,27 @@ $(OUTPUT_NAME).interface.txt: $(OUTPUT) utils/print-interface-of-wasm-module.mjs
 
 DEV_VIRTUAL_ENVS_DIR = .dev_virtualenvs
 
-# A virtual Python environment is used in dev for managing pre-commit hooks
+# A virtual Python environment is used in dev for managing pre-commit hooks, and to install the Rust dev environment
 DEV_PYTHON_VIRTUAL_ENV = $(DEV_VIRTUAL_ENVS_DIR)/python_virtualenv
+# A virtual Rust environment is used for some utilities
+DEV_RUST_VIRTUAL_ENV = $(DEV_VIRTUAL_ENVS_DIR)/rust_virtualenv
 
 ACTIVATE_DEV_PYTHON_VIRTUAL_ENV = source ${DEV_PYTHON_VIRTUAL_ENV}/bin/activate
 
 # Dependencies in the Python dev environment are managed via a Requirements file, stored as python_dev_requirements.txt
 PYTHON_DEV_REQUIREMENTS_TXT = $(DEV_VIRTUAL_ENVS_DIR)/python_dev_requirements.txt
 
-dev-init: install-pre-commit-hooks | ${DEV_PYTHON_VIRTUAL_ENV} ${DEV_RUST_VIRTUAL_ENV}
+# Each Rust utility should be listed here, in order to make sure it is properly configured when related make-targets are run
+RUST_UTILS =
+BUILD_RUST_UTILS = $(addprefix build-rust-util_, $(RUST_UTILS))
+REMOVE_ACTIVATE_LINK_FROM_RUST_UTILS = $(addprefix remove-hard-link-to-rust-venv_, $(RUST_UTILS))
 
-dev-clean: uninstall-pre-commit-hooks
+# Why build all of the Rust utils on dev-init? This is done to frontload all the work of building the dependencies of these utils.
+dev-init: install-pre-commit-hooks $(BUILD_RUST_UTILS) | ${DEV_PYTHON_VIRTUAL_ENV} ${DEV_RUST_VIRTUAL_ENV}
+
+dev-clean: uninstall-pre-commit-hooks $(REMOVE_ACTIVATE_LINK_FROM_RUST_UTILS)
 	${VB} rm -fr ${DEV_PYTHON_VIRTUAL_ENV}
+	${VB} rm -fr ${DEV_RUST_VIRTUAL_ENV}
 
 install-pre-commit-hooks: | ${DEV_PYTHON_VIRTUAL_ENV}
 	@echo [Installing pre-commit hooks]
@@ -157,6 +166,32 @@ generate-python-dev-requirements: | ${DEV_PYTHON_VIRTUAL_ENV}
 		python -m pip freeze >> ${PYTHON_DEV_REQUIREMENTS_TXT}; \
 	)
 
+${DEV_RUST_VIRTUAL_ENV}: | ${DEV_PYTHON_VIRTUAL_ENV}
+	@echo [Creating Rust virtual environment at '${DEV_RUST_VIRTUAL_ENV}/' for development needs]
+	${VB}( \
+		${ACTIVATE_DEV_PYTHON_VIRTUAL_ENV}; \
+		rustenv $@; \
+	)
+
+# Each Rust utility will have, in its top-level directory, a hard link named `.rust_virtual_env_activate` that points
+# to a script that may be 'sourced' in order to activate the dev Rust virtual environment.
+HARD_LINK_TO_RUST_VIRTUAL_ENV_ACTIVATE_SCRIPT = .rust_virtual_env_activate
+
+# Target for creating a hard link named `.rust_virtual_env_activate` that points to the activate script for the dev Rust virtual environment.
+%/$(HARD_LINK_TO_RUST_VIRTUAL_ENV_ACTIVATE_SCRIPT): | ${DEV_RUST_VIRTUAL_ENV}
+	@echo [Providing Rust virtual env activate script to the util '$*']
+	${VB}ln ${DEV_RUST_VIRTUAL_ENV}/bin/activate $@;
+
+# Target for building each of Rust utilities
+$(BUILD_RUST_UTILS): build-rust-util_%: utils/%/$(HARD_LINK_TO_RUST_VIRTUAL_ENV_ACTIVATE_SCRIPT)
+	@echo [Going to build the Rust util '$*']
+	${VB}$(MAKE) --directory=utils/$*
+
+# Target for removing, from each Rust util, the hard link pointing to the Rust virtual environment activate script.
+$(REMOVE_ACTIVATE_LINK_FROM_RUST_UTILS): remove-hard-link-to-rust-venv_%:
+	@echo [Removing hard link to Rust virtual env activate script that is in the util '$*']
+	${VB}rm utils/$*/$(HARD_LINK_TO_RUST_VIRTUAL_ENV_ACTIVATE_SCRIPT)
+
 
 ##########################################################
 # Targets for manually running pre-commit tests
@@ -175,4 +210,4 @@ run-precommit-on-staged-files: | ${DEV_PYTHON_VIRTUAL_ENV}
 	)
 
 
-.PHONY: doom clean dev-init dev-clean install-pre-commit-hooks uninstall-pre-commit-hooks generate-python-dev-requirements run-precommit-on-all-files run-precommit-on-staged-files
+.PHONY: doom clean dev-init dev-clean install-pre-commit-hooks uninstall-pre-commit-hooks generate-python-dev-requirements run-precommit-on-all-files run-precommit-on-staged-files $(BUILD_RUST_UTILS) $(REMOVE_ACTIVATE_LINK_FROM_RUST_UTILS)
