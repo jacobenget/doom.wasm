@@ -12,7 +12,6 @@ imports:
   function runtimeControl.getTicksMs()
   function runtimeControl.sleepMs(i32)
   function ui.drawFrame(i32)
-  function ui.getKey(i32, i32)
   function ui.onGameInit(i32, i32)
   function ui.setWindowTitle(i32)
   function wasi_snapshot_preview1.fd_close(i32)
@@ -33,5 +32,7 @@ imports:
 exports:
   function _initialize()
   function initGame(i32, i32)
+  function reportKeyDown(i32)
+  function reportKeyUp(i32)
   function tickGame()
   memory memory(min = 8, max = ∞)
