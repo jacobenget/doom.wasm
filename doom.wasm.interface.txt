@@ -16,8 +16,6 @@ imports:
   function env.DG_SleepMs(i32)
   function env.W_ParseCommandLine()
   function env.system(i32)
-  function wasi_snapshot_preview1.args_get(i32, i32)
-  function wasi_snapshot_preview1.args_sizes_get(i32, i32)
   function wasi_snapshot_preview1.fd_close(i32)
   function wasi_snapshot_preview1.fd_fdstat_get(i32, i32)
   function wasi_snapshot_preview1.fd_fdstat_set_flags(i32, i32)
@@ -34,7 +32,7 @@ imports:
   function wasi_snapshot_preview1.proc_exit(i32)
 
 exports:
-  function _start()
+  function _initialize()
   function initGame(i32, i32)
   function tickGame()
   memory memory(min = 8, max = ∞)
