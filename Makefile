@@ -77,7 +77,7 @@ $(OUTPUT_DIR)/%.o:	src/%.c
 	fi
 
 # Produce a text file that describes the imports and exports of the Doom WebAssembly module.
-$(OUTPUT_NAME).interface.txt: $(OUTPUT) utils/print-interface-of-wasm-module.mjs
+$(OUTPUT_NAME).interface.txt: $(OUTPUT) utils/print-interface-of-wasm-module/
 	$(VB) > $@
 	$(VB)echo "##############################################################################" >> $@
 	$(VB)echo "#" >> $@
@@ -88,7 +88,7 @@ $(OUTPUT_NAME).interface.txt: $(OUTPUT) utils/print-interface-of-wasm-module.mjs
 	$(VB)echo "#" >> $@
 	$(VB)echo "##############################################################################" >> $@
 	$(VB)echo "" >> $@
-	$(VB)docker run --rm -v $(DIR_CONTAINING_THIS_MAKEFILE):/repo -w /repo node:20.17.0 node utils/print-interface-of-wasm-module.mjs $(OUTPUT) >> $@
+	${VB}$(MAKE) --directory=utils/print-interface-of-wasm-module/ run PATH_TO_WASM_MODULE=$(abspath $(OUTPUT)) >> $@
 
 
 ##########################################################
@@ -108,7 +108,7 @@ ACTIVATE_DEV_PYTHON_VIRTUAL_ENV = source ${DEV_PYTHON_VIRTUAL_ENV}/bin/activate
 PYTHON_DEV_REQUIREMENTS_TXT = $(DEV_VIRTUAL_ENVS_DIR)/python_dev_requirements.txt
 
 # Each Rust utility should be listed here, in order to make sure it is properly configured when related make-targets are run
-RUST_UTILS =
+RUST_UTILS = print-interface-of-wasm-module
 BUILD_RUST_UTILS = $(addprefix build-rust-util_, $(RUST_UTILS))
 REMOVE_ACTIVATE_LINK_FROM_RUST_UTILS = $(addprefix remove-hard-link-to-rust-venv_, $(RUST_UTILS))
 
