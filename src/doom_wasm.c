@@ -9,7 +9,7 @@
 // *                             IMPORTED FUNCTIONS                            *
 // *****************************************************************************
 
-__attribute__((import_module("ui"))) void onGameInit();
+__attribute__((import_module("ui"))) void onGameInit(int width, int height);
 __attribute__((import_module("ui"))) void drawFrame(uint32_t *screenBuffer);
 __attribute__((import_module("ui"))) int getKey(int *pressed,
                                                 unsigned char *key);
@@ -35,7 +35,7 @@ __attribute__((visibility("default"))) void tickGame() { doomgeneric_Tick(); }
 // Here we implement the doomgeneric interface via the functions imported via
 // WebAssembly imports.
 
-void DG_Init() { onGameInit(); }
+void DG_Init() { onGameInit(DOOMGENERIC_RESX, DOOMGENERIC_RESY); }
 
 void DG_DrawFrame() { drawFrame(DG_ScreenBuffer); }
 
