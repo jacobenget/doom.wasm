@@ -43,6 +43,7 @@ fn main() -> Result<()> {
         process::exit(1);
     });
 
+    // Produce a name for an ExternType
     fn type_name(extern_type: &ExternType) -> &'static str {
         use ExternType::*;
         match extern_type {
@@ -53,11 +54,48 @@ fn main() -> Result<()> {
         }
     }
 
+    // Produce extra information for an ExternType, which concisely describes the ExternType to a human reader
+    fn type_extra_information(extern_type: &ExternType) -> String {
+        use ExternType::*;
+        match extern_type {
+            Func(func_type) => {
+                format!(
+                    "{list_of_args}",
+                    list_of_args = func_type.params().map(|x| format!("{}", x)).join(", ")
+                )
+            }
+            Global(global_type) => {
+                format!(
+                    "{valtype}, mutable = {is_mutable}",
+                    valtype = global_type.content(),
+                    is_mutable = global_type.mutability().is_var()
+                )
+            }
+            Table(table_type) => {
+                let label_for_max = table_type.maximum().map(|m| format!("{}", m)).unwrap_or("∞".to_string());
+                format!(
+                    "min = {}, max = {}, reftype = {}",
+                    table_type.minimum(),
+                    label_for_max,
+                    table_type.element()
+                )
+            }
+            Memory(memory_type) => {
+                let label_for_max = memory_type.maximum().map(|m| format!("{}", m)).unwrap_or("∞".to_string());
+                format!(
+                    "min = {}, max = {}",
+                    memory_type.minimum(),
+                    label_for_max
+                )
+            }
+        }
+    }
+
     let imports = module.imports().map(
-        |x| format!("{ty} {module}.{name}", ty = type_name(&x.ty()), module = x.module(), name = x.name())
+        |x| format!("{ty} {module}.{name}({extra})", ty = type_name(&x.ty()), module = x.module(), name = x.name(), extra = type_extra_information(&x.ty()))
     );
     let exports = module.exports().map(
-        |x| format!("{ty} {name}", ty = type_name(&x.ty()), name = x.name())
+        |x| format!("{ty} {name}({extra})", ty = type_name(&x.ty()), name = x.name(), extra = type_extra_information(&x.ty()))
     );
 
     println!("imports:");
