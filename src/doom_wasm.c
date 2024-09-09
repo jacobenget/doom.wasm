@@ -22,31 +22,24 @@ __attribute__((import_module("runtimeControl"))) uint32_t getTicksMs();
 // *                             EXPORTED FUNCTIONS                            *
 // *****************************************************************************
 
-// A global cache of which keys are currently pressed down, according to what
-// the user of this module has reported to via `reportKeyDown` and
-// `reportKeyUp`.
-static bool isKeyPressed[UINT8_MAX] = {false};
-
-__attribute__((visibility("default"))) void initGame(int argc, char **argv) {
-  doomgeneric_Create(argc, argv);
-}
-
-__attribute__((visibility("default"))) void tickGame() { doomgeneric_Tick(); }
-
-__attribute__((visibility("default"))) void reportKeyDown(uint8_t doomKey) {
-  isKeyPressed[doomKey] = true;
-}
-
-__attribute__((visibility("default"))) void reportKeyUp(uint8_t doomKey) {
-  isKeyPressed[doomKey] = false;
-}
+__attribute__((visibility("default"))) void initGame(int argc, char **argv);
+__attribute__((visibility("default"))) void tickGame();
+__attribute__((visibility("default"))) void reportKeyDown(uint8_t doomKey);
+__attribute__((visibility("default"))) void reportKeyUp(uint8_t doomKey);
 
 // *****************************************************************************
 // *                           IMPLEMENTATION DETAILS                          *
 // *****************************************************************************
 
+// A global cache of which keys are currently pressed down, according to what
+// the user of this module has reported to via `reportKeyDown` and
+// `reportKeyUp`.
+static bool isKeyPressed[UINT8_MAX] = {false};
+
+////////////////////////////////////////////////////////////////////////////////
 // Here we implement the doomgeneric interface via the functions imported via
 // WebAssembly imports.
+////////////////////////////////////////////////////////////////////////////////
 
 void DG_Init() { onGameInit(DOOMGENERIC_RESX, DOOMGENERIC_RESY); }
 
@@ -78,3 +71,16 @@ void DG_SetWindowTitle(const char *title) { setWindowTitle(title); }
 void DG_SleepMs(uint32_t ms) { sleepMs(ms); }
 
 uint32_t DG_GetTicksMs() { return getTicksMs(); }
+
+////////////////////////////////////////////////////////////////////////////////
+// Here we implement, via the doomgeneric interface, the WebAssembly exported
+// functions.
+////////////////////////////////////////////////////////////////////////////////
+
+void initGame(int argc, char **argv) { doomgeneric_Create(argc, argv); }
+
+void tickGame() { doomgeneric_Tick(); }
+
+void reportKeyDown(uint8_t doomKey) { isKeyPressed[doomKey] = true; }
+
+void reportKeyUp(uint8_t doomKey) { isKeyPressed[doomKey] = false; }
