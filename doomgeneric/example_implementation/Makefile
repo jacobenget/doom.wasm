@@ -7,7 +7,7 @@ else
 endif
 
 CC = clang  # gcc or g++
-CFLAGS += -DFEATURE_SOUND -I$(shell pwd)/../include
+CFLAGS += -DFEATURE_SOUND -I$(shell pwd)/.. -I$(shell pwd)/../include
 LDFLAGS +=
 LIBS += -lm
 
