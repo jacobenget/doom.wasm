@@ -89,7 +89,7 @@ $(OUTPUT_DIR_WASM_SPECIFIC):
 $(OUTPUT_DIR)/%.o:	doomgeneric/src/%.c
 	$(VB)if echo "$(CC)" | grep -q "wasi"; then \
 		echo [Compiling $<]; \
-		$(CC) $(CFLAGS) -I$(DIR_CONTAINING_THIS_MAKEFILE)/doomgeneric/include -c $< -o $@; \
+		$(CC) $(CFLAGS) -I$(DIR_CONTAINING_THIS_MAKEFILE)/doomgeneric -I$(DIR_CONTAINING_THIS_MAKEFILE)/doomgeneric/include -c $< -o $@; \
 	else \
 		echo [Delegating to WASI SDK Docker image]; \
 		${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $@; \
@@ -98,7 +98,7 @@ $(OUTPUT_DIR)/%.o:	doomgeneric/src/%.c
 $(OUTPUT_DIR_WASM_SPECIFIC)/%.o:	%.c
 	$(VB)if echo "$(CC)" | grep -q "wasi"; then \
 		echo [Compiling $<]; \
-		$(CC) $(CFLAGS) -I$(DIR_CONTAINING_THIS_MAKEFILE)/doomgeneric/include -c $< -o $@; \
+		$(CC) $(CFLAGS) -I$(DIR_CONTAINING_THIS_MAKEFILE)/doomgeneric -c $< -o $@; \
 	else \
 		echo [Delegating to WASI SDK Docker image]; \
 		${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $@; \
