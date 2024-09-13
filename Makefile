@@ -76,10 +76,10 @@ $(OUTPUT_DIR):
 # We do this by detecting when the literal phrase 'wasi' DOESN'T appear in the path to the compiler
 # (e.g. you're running locally and aren't configured to use a local WASI SDK installation)
 # and then rerunning this `make` target in a docker container based on the WASI SDK docker image.
-$(OUTPUT_DIR)/%.o:	src/%.c
+$(OUTPUT_DIR)/%.o:	doomgeneric/src/%.c
 	$(VB)if echo "$(CC)" | grep -q "wasi"; then \
 		echo [Compiling $<]; \
-		$(CC) $(CFLAGS) -I$(DIR_CONTAINING_THIS_MAKEFILE)/include -c $< -o $@; \
+		$(CC) $(CFLAGS) -I$(DIR_CONTAINING_THIS_MAKEFILE)/doomgeneric/include -c $< -o $@; \
 	else \
 		echo [Delegating to WASI SDK Docker image]; \
 		${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $@; \
