@@ -22,7 +22,7 @@ __attribute__((import_module("runtimeControl"))) uint32_t getTicksMs();
 // *                             EXPORTED FUNCTIONS                            *
 // *****************************************************************************
 
-__attribute__((visibility("default"))) void initGame(int argc, char **argv);
+__attribute__((visibility("default"))) void initGame();
 __attribute__((visibility("default"))) void tickGame();
 __attribute__((visibility("default"))) void reportKeyDown(uint8_t doomKey);
 __attribute__((visibility("default"))) void reportKeyUp(uint8_t doomKey);
@@ -77,7 +77,16 @@ uint32_t DG_GetTicksMs() { return getTicksMs(); }
 // functions.
 ////////////////////////////////////////////////////////////////////////////////
 
-void initGame(int argc, char **argv) { doomgeneric_Create(argc, argv); }
+void initGame() {
+  // Provide 0 command line arguments to Doom.
+  // Any configuration knobs we end up exposing via WebAssembly that would
+  // usually be handled by command line arguments will instead be handled in a
+  // different way.
+  int argc = 0;
+  char *argv[] = {};
+
+  doomgeneric_Create(argc, argv);
+}
 
 void tickGame() { doomgeneric_Tick(); }
 
