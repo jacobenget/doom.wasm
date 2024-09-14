@@ -31,7 +31,7 @@ imports:
 
 exports:
   function _initialize()
-  function initGame(i32, i32)
+  function initGame()
   function reportKeyDown(i32)
   function reportKeyUp(i32)
   function tickGame()
