@@ -1217,6 +1217,12 @@ void D_DoomMain(void) {
 
   // Find main IWAD file and load it.
   iwadfile = D_FindIWAD(IWAD_MASK_DOOM, &gamemission);
+  // Reset `gamemission` here, so its value is fully determined below based on
+  // the contents of the IWAD being used. This may mess up a few features
+  // related to support for obscure IWADs, but we're only currently aiming to
+  // support games compatible with `doom` and `doom2` gamemissions. In
+  // particular, this may mean we won't currently support Heretic or Hexen.
+  gamemission = none;
 
   // None found?
 
