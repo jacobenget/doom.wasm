@@ -21,17 +21,11 @@
 
 #include <stdio.h>
 
+#include "doomgeneric.h"
+
 // maximum size of a savegame description
 
 #define SAVESTRINGSIZE 24
-
-// temporary filename to use while saving.
-
-char *P_TempSaveGameFile(void);
-
-// filename to use for a savegame slot
-
-char *P_SaveGameFile(int slot);
 
 // Savegame file header read/write functions
 
@@ -54,7 +48,8 @@ void P_UnArchiveThinkers(void);
 void P_ArchiveSpecials(void);
 void P_UnArchiveSpecials(void);
 
-extern FILE *save_stream;
+extern save_game_reader_t *save_game_reader;
+extern save_game_writer_t *save_game_writer;
 extern boolean savegame_error;
 
 #endif
