@@ -30,10 +30,10 @@
 typedef struct {
   wad_file_t wad;
   FILE *fstream;
-} stdc_wad_file_t;
+} file_based_wad_file_t;
 
-static wad_file_t *W_StdC_OpenFile(char *path) {
-  stdc_wad_file_t *result;
+wad_file_t *W_OpenFile(char *path) {
+  file_based_wad_file_t *result;
   FILE *fstream;
 
   fstream = fopen(path, "rb");
@@ -42,9 +42,9 @@ static wad_file_t *W_StdC_OpenFile(char *path) {
     return NULL;
   }
 
-  // Create a new stdc_wad_file_t to hold the file handle.
+  // Create a new file_based_wad_file_t to hold the file handle.
 
-  result = Z_Malloc(sizeof(stdc_wad_file_t), PU_STATIC, 0);
+  result = Z_Malloc(sizeof(file_based_wad_file_t), PU_STATIC, 0);
   result->wad.mapped = NULL;
   result->wad.length = M_FileLength(fstream);
   result->fstream = fstream;
@@ -52,41 +52,29 @@ static wad_file_t *W_StdC_OpenFile(char *path) {
   return &result->wad;
 }
 
-static void W_StdC_CloseFile(wad_file_t *wad) {
-  stdc_wad_file_t *stdc_wad;
+void W_CloseFile(wad_file_t *wad) {
+  file_based_wad_file_t *wad_file;
 
-  stdc_wad = (stdc_wad_file_t *)wad;
+  wad_file = (file_based_wad_file_t *)wad;
 
-  fclose(stdc_wad->fstream);
-  Z_Free(stdc_wad);
+  fclose(wad_file->fstream);
+  Z_Free(wad_file);
 }
-
-// Read data from the specified position in the file into the
-// provided buffer.  Returns the number of bytes read.
-
-static size_t W_StdC_Read(wad_file_t *wad, unsigned int offset, void *buffer,
-                          size_t buffer_len) {
-  stdc_wad_file_t *stdc_wad;
-  size_t result;
-
-  stdc_wad = (stdc_wad_file_t *)wad;
-
-  // Jump to the specified position in the file.
-
-  fseek(stdc_wad->fstream, offset, SEEK_SET);
-
-  // Read into the buffer.
-
-  result = fread(buffer, 1, buffer_len, stdc_wad->fstream);
-
-  return result;
-}
-
-wad_file_t *W_OpenFile(char *path) { return W_StdC_OpenFile(path); }
-
-void W_CloseFile(wad_file_t *wad) { W_StdC_CloseFile(wad); }
 
 size_t W_Read(wad_file_t *wad, unsigned int offset, void *buffer,
               size_t buffer_len) {
-  return W_StdC_Read(wad, offset, buffer, buffer_len);
+  file_based_wad_file_t *wad_file;
+  size_t result;
+
+  wad_file = (file_based_wad_file_t *)wad;
+
+  // Jump to the specified position in the file.
+
+  fseek(wad_file->fstream, offset, SEEK_SET);
+
+  // Read into the buffer.
+
+  result = fread(buffer, 1, buffer_len, wad_file->fstream);
+
+  return result;
 }
