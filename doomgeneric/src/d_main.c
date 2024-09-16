@@ -1320,6 +1320,10 @@ void D_DoomMain(void) {
   // Play back the demo named demo.lmp.
   //
 
+// Temporarily remove support for manually playing a demo via commandline,
+// because this feature needs support for loading individual 'lumps' as WAD
+// files and we're not yet investing in that feature.
+#if 0
   p = M_CheckParmWithArgs("-playdemo", 1);
 
   if (!p) {
@@ -1356,6 +1360,7 @@ void D_DoomMain(void) {
 
     printf("Playing demo %s.\n", file);
   }
+#endif
 
   I_AtExit((atexit_func_t)G_CheckDemoStatus, true);
 
