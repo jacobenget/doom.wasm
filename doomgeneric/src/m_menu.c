@@ -1199,6 +1199,8 @@ boolean M_Responder(event_t *ev) {
 
     case KEY_ENTER:
       saveStringEnter = 0;
+      // Save the game only if the user actually provided a non-empty
+      // name/description for the save game
       if (savegamestrings[saveSlot][0])
         M_DoSave(saveSlot);
       break;
