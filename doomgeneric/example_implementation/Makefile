@@ -114,5 +114,11 @@ run: $(OUTPUT_DIR)/DOOM1.WAD $(OUTPUT)
 	@echo [Running SDL Doom with Shareware WAD]
 	cd $(OUTPUT_DIR); ./${OUTPUT_EXE_NAME} ../$<
 
+# Note that Doom is going to use the current working directory to hold its configuration data (e.g. .savegame/),
+# so when running Doom we make sure that directory is a directory not managed by source control.
+run-with-test-pwad: $(OUTPUT)
+	@echo [Running SDL Doom with GOTHIC2 WAD on top of Freedoom2]
+	cd $(OUTPUT_DIR); ./${OUTPUT_EXE_NAME} ../test_wad_files/freedoom2.wad ../test_wad_files/GOTHIC2.WAD
+
 
 .PHONY: clean run print
