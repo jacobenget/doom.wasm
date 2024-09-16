@@ -28,6 +28,7 @@
 #include "deh_main.h"
 #include "doomdef.h"
 #include "doomstat.h"
+#include "doomgeneric.h"
 
 #include "dstrings.h"
 #include "doomfeatures.h"
@@ -36,7 +37,6 @@
 #include "d_iwad.h"
 
 #include "z_zone.h"
-#include "w_main.h"
 #include "w_wad.h"
 #include "s_sound.h"
 #include "v_video.h"
@@ -87,10 +87,6 @@ void D_DoomLoop(void);
 // Location where savegames are stored
 
 char *savegamedir;
-
-// location of IWAD and WAD files
-
-char *iwadfile;
 
 boolean devparm;     // started game with -devparm
 boolean nomonsters;  // checkparm of -nomonsters
@@ -763,15 +759,6 @@ void D_SetGameDescription(void) {
 //      print title for every printed line
 char title[128];
 
-static boolean D_AddFile(char *filename) {
-  wad_file_t *handle;
-
-  printf(" adding %s\n", filename);
-  handle = W_AddFile(filename);
-
-  return handle != NULL;
-}
-
 // Copyright message banners
 // Some dehacked mods replace these.  These are only displayed if they are
 // replaced by dehacked.
@@ -1216,7 +1203,7 @@ void D_DoomMain(void) {
   I_AtExit(M_SaveDefaults, false);
 
   // Find main IWAD file and load it.
-  iwadfile = D_FindIWAD(IWAD_MASK_DOOM, &gamemission);
+  struct DB_BytesForAllWads wadData = DG_GetWads();
   // Reset `gamemission` here, so its value is fully determined below based on
   // the contents of the IWAD being used. This may mess up a few features
   // related to support for obscure IWADs, but we're only currently aiming to
@@ -1226,15 +1213,15 @@ void D_DoomMain(void) {
 
   // None found?
 
-  if (iwadfile == NULL) {
-    I_Error("Game mode indeterminate.  No IWAD file was found.  Try\n"
-            "specifying one with the '-iwad' command line parameter.\n");
+  if (wadData.iWad.data == NULL) {
+    I_Error("Game mode indeterminate.  No IWAD file was found.\n");
   }
 
   modifiedgame = false;
 
   DEH_printf("W_Init: Init WADfiles.\n");
-  D_AddFile(iwadfile);
+
+  W_AddFile(wadData.iWad.data, wadData.iWad.byteLength);
 #if ORIGCODE
   numiwadlumps = numlumps;
 #endif
@@ -1307,7 +1294,10 @@ void D_DoomMain(void) {
 #endif
 
   // Load PWAD files.
-  modifiedgame = W_ParseCommandLine();
+  for (int i = 0; i < wadData.numberOfPWads; i++) {
+    modifiedgame = true;
+    W_AddFile(wadData.pWads[i].data, wadData.pWads[i].byteLength);
+  }
 
   // Debug:
   //    W_PrintDirectory();

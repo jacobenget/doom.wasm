@@ -179,6 +179,86 @@ int DG_GetKey(int *pressed, unsigned char *doomKey) {
   return 0;
 }
 
+//
+// Determine the length of an open file.
+//
+static long M_FileLength(FILE *handle) {
+  // save the current position in the file
+  long savedpos = ftell(handle);
+
+  // jump to the end and find the length
+  fseek(handle, 0, SEEK_END);
+  long length = ftell(handle);
+
+  // go back to the old location
+  fseek(handle, savedpos, SEEK_SET);
+
+  return length;
+}
+
+// These values are initialized upon startup
+char *pathToIWad;
+char **pathsToPWads;
+int numberOfPathsToPWads;
+
+//
+// Read in an entire WAD file and return its length and bytes in a struct.
+// The caller takes ownership of the memory allocated for these bytes.
+//
+static struct DG_WadFileBytes readWadFile(const char *pathToWadFile) {
+  struct DG_WadFileBytes result = {0};
+
+  FILE *handle = fopen(pathToWadFile, "rb");
+  if (handle != NULL) {
+    long fileLength = M_FileLength(handle);
+    unsigned char *wadData = malloc(fileLength);
+    if (wadData != NULL) {
+      size_t count = fread(wadData, 1, fileLength, handle);
+      fclose(handle);
+
+      // If the read of the entire file was successful
+      if (count == fileLength) {
+        result.data = wadData;
+        result.byteLength = fileLength;
+      } else {
+        fprintf(stderr, "There was an issue reading WAD data from file '%s'\n",
+                pathToWadFile);
+      }
+    } else {
+      fprintf(stderr,
+              "Failed to allocate %ld bytes of memory for WAD data when "
+              "reading file '%s'\n",
+              fileLength, pathToWadFile);
+    }
+  } else {
+    fprintf(stderr,
+            "Failed to open file when attempting to load WAD data: '%s'\n",
+            pathToWadFile);
+  }
+
+  return result;
+}
+
+struct DB_BytesForAllWads DG_GetWads() {
+  struct DB_BytesForAllWads result = {0};
+
+  result.iWad = readWadFile(pathToIWad);
+
+  result.pWads = malloc(sizeof(struct DG_WadFileBytes) * numberOfPathsToPWads);
+  if (result.pWads != NULL) {
+    result.numberOfPWads = numberOfPathsToPWads;
+
+    for (int i = 0; i < numberOfPathsToPWads; i++) {
+      result.pWads[i] = readWadFile(pathsToPWads[i]);
+    }
+  } else {
+    fprintf(stderr, "Failed to allocate memory for %d PWADs\n",
+            numberOfPathsToPWads);
+  }
+
+  return result;
+}
+
 void DG_SetWindowTitle(const char *title) {
   if (window != NULL) {
     SDL_SetWindowTitle(window, title);
@@ -186,11 +266,29 @@ void DG_SetWindowTitle(const char *title) {
 }
 
 int main(int argc, char **argv) {
-  doomgeneric_Create(argc, argv);
 
-  for (int i = 0;; i++) {
-    doomgeneric_Tick();
+  if (argc < 2) {
+    printf("Usage: %s <path to IWAD> [<path to PWAD> ...]\n", argv[0]);
+    return 1;
+  } else {
+    // We're interpreting all command line arguments as paths to WAD files.
+    // The first arg (required) is the path to the IWAD ("Internal WAD")
+    pathToIWad = argv[1];
+    // The remaining args (optional) are all paths to PWADs ("Patch WAD").
+    if (argc > 2) {
+      numberOfPathsToPWads = argc - 2;
+      pathsToPWads = argv + 2;
+    } else {
+      numberOfPathsToPWads = 0;
+      pathsToPWads = NULL;
+    }
+
+    doomgeneric_Create(0, NULL);
+
+    for (int i = 0;; i++) {
+      doomgeneric_Tick();
+    }
+
+    return 0;
   }
-
-  return 0;
 }

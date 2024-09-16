@@ -9,11 +9,23 @@
 
 extern uint32_t *DG_ScreenBuffer;
 
+struct DG_WadFileBytes {
+  unsigned char *data;
+  size_t byteLength;
+};
+
+struct DB_BytesForAllWads {
+  struct DG_WadFileBytes iWad;
+  struct DG_WadFileBytes *pWads;
+  int numberOfPWads;
+};
+
 void doomgeneric_Create(int argc, char **argv);
 void doomgeneric_Tick();
 
 // Implement below functions for your platform
 void DG_Init();
+struct DB_BytesForAllWads DG_GetWads();
 void DG_DrawFrame();
 void DG_SleepMs(uint32_t ms);
 uint32_t DG_GetTicksMs();

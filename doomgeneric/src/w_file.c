@@ -17,6 +17,7 @@
 //
 
 #include <stdio.h>
+#include <string.h>
 
 #include "config.h"
 
@@ -27,54 +28,18 @@
 #include "m_misc.h"
 #include "z_zone.h"
 
-typedef struct {
-  wad_file_t wad;
-  FILE *fstream;
-} file_based_wad_file_t;
+wad_file_t *W_OpenFile(byte *wadData, size_t wadByteLength) {
+  wad_file_t *result = Z_Malloc(sizeof(wad_file_t), PU_STATIC, 0);
+  result->mapped = wadData;
+  result->length = wadByteLength;
 
-wad_file_t *W_OpenFile(char *path) {
-  file_based_wad_file_t *result;
-  FILE *fstream;
-
-  fstream = fopen(path, "rb");
-
-  if (fstream == NULL) {
-    return NULL;
-  }
-
-  // Create a new file_based_wad_file_t to hold the file handle.
-
-  result = Z_Malloc(sizeof(file_based_wad_file_t), PU_STATIC, 0);
-  result->wad.mapped = NULL;
-  result->wad.length = M_FileLength(fstream);
-  result->fstream = fstream;
-
-  return &result->wad;
+  return result;
 }
 
-void W_CloseFile(wad_file_t *wad) {
-  file_based_wad_file_t *wad_file;
-
-  wad_file = (file_based_wad_file_t *)wad;
-
-  fclose(wad_file->fstream);
-  Z_Free(wad_file);
-}
+void W_CloseFile(wad_file_t *wad) { Z_Free(wad); }
 
 size_t W_Read(wad_file_t *wad, unsigned int offset, void *buffer,
               size_t buffer_len) {
-  file_based_wad_file_t *wad_file;
-  size_t result;
-
-  wad_file = (file_based_wad_file_t *)wad;
-
-  // Jump to the specified position in the file.
-
-  fseek(wad_file->fstream, offset, SEEK_SET);
-
-  // Read into the buffer.
-
-  result = fread(buffer, 1, buffer_len, wad_file->fstream);
-
-  return result;
+  memcpy(buffer, wad->mapped + offset, buffer_len);
+  return buffer_len;
 }
