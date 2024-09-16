@@ -19,10 +19,12 @@
 
 #include <stdlib.h>
 #include <ctype.h>
+#include <assert.h>
 
 #include "doomdef.h"
 #include "doomkeys.h"
 #include "dstrings.h"
+#include "doomgeneric.h"
 
 #include "d_main.h"
 #include "deh_main.h"
@@ -109,7 +111,7 @@ boolean menuactive;
 #define LINEHEIGHT 16
 
 extern boolean sendpause;
-char savegamestrings[10][SAVESTRINGSIZE];
+char savegamestrings[SAVEGAMECOUNT][SAVESTRINGSIZE];
 
 char endstring[160];
 
@@ -329,6 +331,9 @@ menu_t SoundDef = {sound_end, &OptionsDef, SoundMenu, M_DrawSound, 80, 64, 0};
 // LOAD GAME MENU
 //
 enum { load1, load2, load3, load4, load5, load6, load_end } load_e;
+static_assert(load_end <= SAVEGAMECOUNT,
+              "The save and load game menus must not display more save game "
+              "slots than are available");
 
 menuitem_t LoadMenu[] = {
     {1, "", M_LoadSelect, '1'}, {1, "", M_LoadSelect, '2'},
@@ -352,21 +357,15 @@ menu_t SaveDef = {load_end, &MainDef, SaveMenu, M_DrawSave, 80, 54, 0};
 //  read the strings from the savegame files
 //
 void M_ReadSaveStrings(void) {
-  FILE *handle;
-  int i;
-  char name[256];
-
-  for (i = 0; i < load_end; i++) {
-    M_StringCopy(name, P_SaveGameFile(i), sizeof(name));
-
-    handle = fopen(name, "rb");
-    if (handle == NULL) {
+  for (int i = 0; i < load_end; i++) {
+    save_game_reader_t *reader = DG_OpenSaveGameReader(i);
+    if (reader == NULL) {
       M_StringCopy(savegamestrings[i], EMPTYSTRING, SAVESTRINGSIZE);
       LoadMenu[i].status = 0;
       continue;
     }
-    fread(&savegamestrings[i], 1, SAVESTRINGSIZE, handle);
-    fclose(handle);
+    reader->ReadBytes(reader, savegamestrings[i], SAVESTRINGSIZE);
+    reader->Close(reader);
     LoadMenu[i].status = 1;
   }
 }
@@ -408,11 +407,7 @@ void M_DrawSaveLoadBorder(int x, int y) {
 // User wants to load this game
 //
 void M_LoadSelect(int choice) {
-  char name[256];
-
-  M_StringCopy(name, P_SaveGameFile(choice), sizeof(name));
-
-  G_LoadGame(name);
+  G_LoadGame(choice);
   M_ClearMenus();
 }
 

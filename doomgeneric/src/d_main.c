@@ -84,10 +84,6 @@
 //
 void D_DoomLoop(void);
 
-// Location where savegames are stored
-
-char *savegamedir;
-
 boolean devparm;     // started game with -devparm
 boolean nomonsters;  // checkparm of -nomonsters
 boolean respawnparm; // checkparm of -respawn
@@ -1385,16 +1381,6 @@ void D_DoomMain(void) {
   // we've finished loading Dehacked patches.
   D_SetGameDescription();
 
-#ifdef _WIN32
-  // In -cdrom mode, we write savegames to c:\doomdata as well as configs.
-  if (M_ParmExists("-cdrom")) {
-    savegamedir = configdir;
-  } else
-#endif
-  {
-    savegamedir = M_GetSaveGameDir(D_SaveGameIWADName(gamemission));
-  }
-
   // Check for -file in shareware
   if (modifiedgame) {
     // These are the lumps that will be checked in IWAD,
@@ -1642,8 +1628,7 @@ void D_DoomMain(void) {
   }
 
   if (startloadgame >= 0) {
-    M_StringCopy(file, P_SaveGameFile(startloadgame), sizeof(file));
-    G_LoadGame(file);
+    G_LoadGame(startloadgame);
   }
 
   if (gameaction != ga_loadgame) {

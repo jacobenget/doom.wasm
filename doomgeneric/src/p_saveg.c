@@ -35,48 +35,17 @@
 #define SAVEGAME_EOF 0x1d
 #define VERSIONSIZE 16
 
-FILE *save_stream;
+save_game_reader_t *save_game_reader;
+save_game_writer_t *save_game_writer;
 int savegamelength;
 boolean savegame_error;
-
-// Get the filename of a temporary file to write the savegame to.  After
-// the file has been successfully saved, it will be renamed to the
-// real file.
-
-char *P_TempSaveGameFile(void) {
-  static char *filename = NULL;
-
-  if (filename == NULL) {
-    filename = M_StringJoin(savegamedir, "temp.dsg", NULL);
-  }
-
-  return filename;
-}
-
-// Get the filename of the save game file to use for the specified slot.
-
-char *P_SaveGameFile(int slot) {
-  static char *filename = NULL;
-  static size_t filename_size = 0;
-  char basename[32];
-
-  if (filename == NULL) {
-    filename_size = strlen(savegamedir) + 32;
-    filename = malloc(filename_size);
-  }
-
-  DEH_snprintf(basename, 32, SAVEGAMENAME "%d.dsg", slot);
-  M_snprintf(filename, filename_size, "%s%s", savegamedir, basename);
-
-  return filename;
-}
 
 // Endian-safe integer read/write functions
 
 static byte saveg_read8(void) {
   byte result;
 
-  if (fread(&result, 1, 1, save_stream) < 1) {
+  if (save_game_reader->ReadBytes(save_game_reader, &result, 1) < 1) {
     if (!savegame_error) {
       fprintf(stderr, "saveg_read8: Unexpected end of file while "
                       "reading save game\n");
@@ -89,7 +58,7 @@ static byte saveg_read8(void) {
 }
 
 static void saveg_write8(byte value) {
-  if (fwrite(&value, 1, 1, save_stream) < 1) {
+  if (save_game_writer->WriteBytes(save_game_writer, &value, 1) < 1) {
     if (!savegame_error) {
       fprintf(stderr, "saveg_write8: Error while writing save game\n");
 
@@ -137,7 +106,7 @@ static void saveg_read_pad(void) {
   int padding;
   int i;
 
-  pos = ftell(save_stream);
+  pos = save_game_reader->BytesReadSoFar(save_game_reader);
 
   padding = (4 - (pos & 3)) & 3;
 
@@ -151,7 +120,7 @@ static void saveg_write_pad(void) {
   int padding;
   int i;
 
-  pos = ftell(save_stream);
+  pos = save_game_writer->BytesWrittenSoFar(save_game_writer);
 
   padding = (4 - (pos & 3)) & 3;
 

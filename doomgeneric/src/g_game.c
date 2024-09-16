@@ -1332,10 +1332,10 @@ void G_DoWorldDone(void) {
 extern boolean setsizeneeded;
 void R_ExecuteSetViewSize(void);
 
-char savename[256];
+static int saveslot;
 
-void G_LoadGame(char *name) {
-  M_StringCopy(savename, name, sizeof(savename));
+void G_LoadGame(int slotToLoad) {
+  saveslot = slotToLoad;
   gameaction = ga_loadgame;
 }
 
@@ -1346,16 +1346,16 @@ void G_DoLoadGame(void) {
 
   gameaction = ga_nothing;
 
-  save_stream = fopen(savename, "rb");
+  save_game_reader = DG_OpenSaveGameReader(saveslot);
 
-  if (save_stream == NULL) {
+  if (save_game_reader == NULL) {
     return;
   }
 
   savegame_error = false;
 
   if (!P_ReadSaveGameHeader()) {
-    fclose(save_stream);
+    save_game_reader->Close(save_game_reader);
     return;
   }
 
@@ -1375,7 +1375,7 @@ void G_DoLoadGame(void) {
   if (!P_ReadSaveGameEOF())
     I_Error("Bad savegame");
 
-  fclose(save_stream);
+  save_game_reader->Close(save_game_reader);
 
   if (setsizeneeded)
     R_ExecuteSetViewSize();
@@ -1396,29 +1396,11 @@ void G_SaveGame(int slot, char *description) {
 }
 
 void G_DoSaveGame(void) {
-  char *savegame_file;
-  char *temp_savegame_file;
-  char *recovery_savegame_file;
+  // Open the savegame file for writing.
+  save_game_writer = DG_OpenSaveGameWriter(savegameslot);
 
-  recovery_savegame_file = NULL;
-  temp_savegame_file = P_TempSaveGameFile();
-  savegame_file = P_SaveGameFile(savegameslot);
-
-  // Open the savegame file for writing.  We write to a temporary file
-  // and then rename it at the end if it was successfully written.
-  // This prevents an existing savegame from being overwritten by
-  // a corrupted one, or if a savegame buffer overrun occurs.
-  save_stream = fopen(temp_savegame_file, "wb");
-
-  if (save_stream == NULL) {
-    // Failed to save the game, so we're going to have to abort. But
-    // to be nice, save to somewhere else before we call I_Error().
-    recovery_savegame_file = M_TempFile("recovery.dsg");
-    save_stream = fopen(recovery_savegame_file, "wb");
-    if (save_stream == NULL) {
-      I_Error("Failed to open either '%s' or '%s' to write savegame.",
-              temp_savegame_file, recovery_savegame_file);
-    }
+  if (save_game_writer == NULL) {
+    I_Error("Failed to open a file to write savegame.");
   }
 
   savegame_error = false;
@@ -1435,28 +1417,14 @@ void G_DoSaveGame(void) {
   // Enforce the same savegame size limit as in Vanilla Doom,
   // except if the vanilla_savegame_limit setting is turned off.
 
-  if (vanilla_savegame_limit && ftell(save_stream) > SAVEGAMESIZE) {
+  if (vanilla_savegame_limit &&
+      save_game_writer->BytesWrittenSoFar(save_game_writer) > SAVEGAMESIZE) {
     I_Error("Savegame buffer overrun");
   }
 
   // Finish up, close the savegame file.
 
-  fclose(save_stream);
-
-  if (recovery_savegame_file != NULL) {
-    // We failed to save to the normal location, but we wrote a
-    // recovery file to the temp directory. Now we can bomb out
-    // with an error.
-    I_Error("Failed to open savegame file '%s' for writing.\n"
-            "But your game has been saved to '%s' for recovery.",
-            temp_savegame_file, recovery_savegame_file);
-  }
-
-  // Now rename the temporary savegame file to the actual savegame
-  // file, overwriting the old savegame if there was one there.
-
-  remove(savegame_file);
-  rename(temp_savegame_file, savegame_file);
+  save_game_writer->Close(save_game_writer);
 
   gameaction = ga_nothing;
   M_StringCopy(savedescription, "", sizeof(savedescription));
