@@ -1,6 +1,7 @@
 #include "doomgeneric.h"
 
 #include <stdbool.h>
+#include <stdio.h>
 
 /*
  * This file provides augmentations to the interface (i.e. imports and exports)
@@ -17,6 +18,11 @@ __attribute__((import_module("ui"))) void setWindowTitle(const char *title);
 
 __attribute__((import_module("runtimeControl"))) void sleepMs(uint32_t ms);
 __attribute__((import_module("runtimeControl"))) uint32_t getTicksMs();
+
+__attribute__((import_module("loading"))) void
+getWadsSizes(int *numberOfWads, size_t *numberOfTotalBytesInAllWads);
+__attribute__((import_module("loading"))) void
+readDataForAllWads(unsigned char *wadDataDestination, int *byteLengthOfEachWad);
 
 // *****************************************************************************
 // *                             EXPORTED FUNCTIONS                            *
@@ -42,6 +48,42 @@ static bool isKeyPressed[UINT8_MAX] = {false};
 ////////////////////////////////////////////////////////////////////////////////
 
 void DG_Init() { onGameInit(DOOMGENERIC_RESX, DOOMGENERIC_RESY); }
+
+struct DB_BytesForAllWads DG_GetWads() {
+  struct DB_BytesForAllWads result = {0};
+
+  int numberOfWads;
+  size_t numberOfTotalBytesInAllWads;
+  getWadsSizes(&numberOfWads, &numberOfTotalBytesInAllWads);
+
+  if (numberOfWads > 0) {
+    unsigned char *wadData = malloc(numberOfTotalBytesInAllWads);
+    int byteLengthOfEachWad[numberOfWads];
+    readDataForAllWads(wadData, byteLengthOfEachWad);
+
+    unsigned char *dataForNextWad = wadData;
+
+    // Assign data for IWAD (which must be the first WAD)
+    result.iWad.data = dataForNextWad;
+    result.iWad.byteLength = byteLengthOfEachWad[0];
+    dataForNextWad += byteLengthOfEachWad[0];
+
+    // Assign data each PWADs
+    int numberOfPWads = numberOfWads - 1;
+    result.pWads = malloc(sizeof(struct DG_WadFileBytes) * numberOfPWads);
+    for (int i = 0; i < numberOfPWads; i++) {
+      result.pWads[i].data = dataForNextWad;
+      result.pWads[i].byteLength = byteLengthOfEachWad[i + 1];
+      dataForNextWad += byteLengthOfEachWad[i + 1];
+    }
+  } else {
+    fprintf(
+        stderr,
+        "At least one WAD must be provided, but `getWadsSizes` reported 0.\n");
+  }
+
+  return result;
+}
 
 void DG_DrawFrame() { drawFrame(DG_ScreenBuffer); }
 
