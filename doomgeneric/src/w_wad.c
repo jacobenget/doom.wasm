@@ -123,7 +123,7 @@ static void ExtendLumpInfo(int newnumlumps) {
 // Other files are single lumps with the base filename
 //  for the lump name.
 
-wad_file_t *W_AddFile(char *filename) {
+wad_file_t *W_AddFile(byte *wadData, size_t wadByteLength) {
   wadinfo_t header;
   lumpinfo_t *lump_p;
   unsigned int i;
@@ -136,10 +136,10 @@ wad_file_t *W_AddFile(char *filename) {
 
   // open the file and add to directory
 
-  wad_file = W_OpenFile(filename);
+  wad_file = W_OpenFile(wadData, wadByteLength);
 
   if (wad_file == NULL) {
-    printf(" couldn't open %s\n", filename);
+    printf(" couldn't open a WAD file\n");
     return NULL;
   }
 
@@ -173,9 +173,7 @@ wad_file_t *W_AddFile(char *filename) {
     if (strncmp(header.identification, "IWAD", 4)) {
       // Homebrew levels?
       if (strncmp(header.identification, "PWAD", 4)) {
-        I_Error("Wad file %s doesn't have IWAD "
-                "or PWAD id\n",
-                filename);
+        I_Error("Wad file doesn't have IWAD or PWAD id\n");
       }
 
       // ???modifiedgame = true;
