@@ -8,8 +8,9 @@
 ##############################################################################
 
 imports:
-  function env.DG_OpenSaveGameReader(i32)
-  function env.DG_OpenSaveGameWriter(i32)
+  function gameSaving.readSaveGame(i32, i32)
+  function gameSaving.sizeOfSaveGame(i32)
+  function gameSaving.writeSaveGame(i32, i32, i32)
   function loading.getWadsSizes(i32, i32)
   function loading.readDataForAllWads(i32, i32)
   function runtimeControl.getTicksMs()
