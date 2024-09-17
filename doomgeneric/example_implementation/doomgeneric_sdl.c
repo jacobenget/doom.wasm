@@ -393,6 +393,58 @@ void DG_DemoRecorded(const char *demoName, unsigned char *demoBytes,
   }
 }
 
+static bool fileExists(char *pathToFile) {
+  FILE *handle = fopen(pathToFile, "r");
+
+  bool fileExists = (handle != NULL);
+  if (handle != NULL) {
+    fclose(handle);
+  }
+  return fileExists;
+}
+
+void DG_PCXScreenshotTaken(unsigned char *screenshotBytes,
+                           size_t screenshotSize) {
+  const char *screenshotFileNameFormat = "DOOM%02i.pcx";
+  const int maxScreenShotId = 99;
+
+  // When the screenshot id (2 characters) replaces the related format specifier
+  // (4 characters) in the file name format string the resultant string is no
+  // longer than this.
+  size_t maxFileNameLength = strlen(screenshotFileNameFormat);
+  size_t bufferLengthNeeded = maxFileNameLength + 1; // +1 for null terminator
+  char fileName[bufferLengthNeeded];
+
+  // Find an unused screenshot file name, by iterating through all possible ids
+  int i = 0;
+  while (i <= maxScreenShotId) {
+    snprintf(fileName, bufferLengthNeeded, screenshotFileNameFormat, i);
+
+    if (!fileExists(fileName)) {
+      break;
+    } else {
+      i++;
+    }
+  }
+
+  if (i > maxScreenShotId) {
+    fprintf(stderr,
+            "Screenshot: Couldn't save a PCX screenshot because %d screenshots "
+            "already exist on disk\n",
+            maxScreenShotId + 1);
+  } else {
+    FILE *handle = fopen(fileName, "wb");
+    if (handle) {
+      fwrite(screenshotBytes, 1, screenshotSize, handle);
+      fclose(handle);
+      printf("Screenshot saved: %s\n", fileName);
+    } else {
+      fprintf(stderr, "Screenshot: Couldn't open file for writing: %s\n",
+              fileName);
+    }
+  }
+}
+
 static int findIndexOfString(char *needle, char **haystack, size_t haystackSize,
                              int startIndex) {
   for (int i = startIndex; i < haystackSize; i++) {
