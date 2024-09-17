@@ -380,6 +380,16 @@ save_game_writer_t *DG_OpenSaveGameWriter(int saveGameSlot) {
   }
 }
 
+void DG_DemoRecorded(const char *demoName, unsigned char *demoBytes,
+                     size_t demoSize) {
+  FILE *handle = fopen(demoName, "wb");
+  if (handle) {
+    fwrite(demoBytes, 1, demoSize, handle);
+    fclose(handle);
+    printf("Demo recorded: %s, size: %zu\n", demoName, demoSize);
+  }
+}
+
 static int findIndexOfString(char *needle, char **haystack, size_t haystackSize,
                              int startIndex) {
   for (int i = startIndex; i < haystackSize; i++) {
