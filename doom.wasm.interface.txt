@@ -8,6 +8,7 @@
 ##############################################################################
 
 imports:
+  function env.DG_DemoRecorded(i32, i32, i32) -> ()
   function gameSaving.readSaveGame(i32, i32) -> (i32)
   function gameSaving.sizeOfSaveGame(i32) -> (i32)
   function gameSaving.writeSaveGame(i32, i32, i32) -> (i32)

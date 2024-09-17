@@ -15,6 +15,7 @@ Include `doomgeneric.h` into your source file and just implement these functions
 * DG_SetWindowTitle
 * DG_OpenSaveGameReader
 * DG_OpenSaveGameWriter
+* DG_DemoRecorded
 
 |Functions            |Description|
 |---------------------|-----------|
@@ -27,6 +28,7 @@ Include `doomgeneric.h` into your source file and just implement these functions
 |DG_SetWindowTitle    |Not required to do anything. This is for setting the window title as Doom sets this from WAD file.
 |DG_OpenSaveGameReader|Provide an interface to read the save game data from a specific save slot, return NULL if no save data exists in this slot.
 |DG_OpenSaveGameWriter|Provide an interface to write save game data to a specific save slot.
+|DG_DemoRecorded      |Respond to the user having recording a demo.
 
 ### main loop
 At start, call `doomgeneric_Create()`.
