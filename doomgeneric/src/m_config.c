@@ -2083,11 +2083,6 @@ float M_GetFloatVariable(char *name) {
   return *((float *)variable->location);
 }
 
-// Get the path to the default configuration dir to use, if NULL
-// is passed to M_SetConfigDir.
-
-static char *GetDefaultConfigDir(void) { return "."; }
-
 //
 // SetConfigDir:
 //
@@ -2101,7 +2096,7 @@ void M_SetConfigDir(char *dir) {
   if (dir != NULL) {
     configdir = dir;
   } else {
-    configdir = GetDefaultConfigDir();
+    configdir = "."; // Default to current directory
   }
 
   if (strcmp(configdir, "") != 0) {
