@@ -41,7 +41,7 @@
 // Location where all configuration data is stored -
 // default.cfg, savegames, etc.
 
-char *configdir;
+char *configdir = "."; // Default to current directory
 
 // Default filenames for configuration files.
 
@@ -2081,16 +2081,4 @@ float M_GetFloatVariable(char *name) {
   }
 
   return *((float *)variable->location);
-}
-
-//
-// SetConfigDir:
-//
-// Sets the location of the configuration directory, where configuration
-// files are stored - default.cfg, chocolate-doom.cfg, savegames, etc.
-//
-
-void M_SetConfigDir() {
-  configdir = "."; // Default to current directory
-  printf("Using %s for configuration and saves\n", configdir);
 }
