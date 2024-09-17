@@ -2086,13 +2086,7 @@ float M_GetFloatVariable(char *name) {
 // Get the path to the default configuration dir to use, if NULL
 // is passed to M_SetConfigDir.
 
-static char *GetDefaultConfigDir(void) {
-  char *result = (char *)malloc(2);
-  result[0] = '.';
-  result[1] = '\0';
-
-  return result;
-}
+static char *GetDefaultConfigDir(void) { return "."; }
 
 //
 // SetConfigDir:
