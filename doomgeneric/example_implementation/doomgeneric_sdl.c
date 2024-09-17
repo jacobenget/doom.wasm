@@ -265,25 +265,107 @@ void DG_SetWindowTitle(const char *title) {
   }
 }
 
+static int findIndexOfString(char *needle, char **haystack, size_t haystackSize,
+                             int startIndex) {
+  for (int i = startIndex; i < haystackSize; i++) {
+    if (!strcasecmp(needle, haystack[i])) {
+      return i;
+    }
+  }
+
+  return -1;
+}
+
+static int findIndexOfInt(int needle, int *haystack, size_t haystackSize,
+                          int startIndex) {
+  for (int i = startIndex; i < haystackSize; i++) {
+    if (needle == haystack[i]) {
+      return i;
+    }
+  }
+
+  return -1;
+}
+
 int main(int argc, char **argv) {
 
-  if (argc < 2) {
-    printf("Usage: %s <path to IWAD> [<path to PWAD> ...]\n", argv[0]);
+  int indexOfIWadArg = findIndexOfString("-iwad", argv, argc, 1);
+  int indexOfFileArg = findIndexOfString("-file", argv, argc, 1);
+
+  int indexOfIWadPath = (indexOfIWadArg == -1) ? -1 : indexOfIWadArg + 1;
+  if (indexOfIWadPath < 0 || indexOfIWadPath >= argc) {
+    printf("Usage: %s -iwad <path to IWAD> [-file [<path to PWAD> ...]] [any "
+           "other args supported by Doom]]\n",
+           argv[0]);
     return 1;
   } else {
-    // We're interpreting all command line arguments as paths to WAD files.
-    // The first arg (required) is the path to the IWAD ("Internal WAD")
-    pathToIWad = argv[1];
-    // The remaining args (optional) are all paths to PWADs ("Patch WAD").
-    if (argc > 2) {
-      numberOfPathsToPWads = argc - 2;
-      pathsToPWads = argv + 2;
-    } else {
-      numberOfPathsToPWads = 0;
-      pathsToPWads = NULL;
+    int numberOfArgsProcessed = 0;
+    int indicesOfArgsProcessed[argc];
+
+    ////////////////////////////////////////////////////////
+    // Do some custom processing of command line arguments
+    ////////////////////////////////////////////////////////
+
+    // Set IWAD details, provided via command line arguments
+    {
+      pathToIWad = argv[indexOfIWadPath];
+      // We've processed both `-iwad` arg and its related path
+      indicesOfArgsProcessed[numberOfArgsProcessed++] = indexOfIWadArg;
+      indicesOfArgsProcessed[numberOfArgsProcessed++] = indexOfIWadPath;
+
+      printf("Game data: Using this IWAD: %s\n", pathToIWad);
     }
 
-    doomgeneric_Create(0, NULL);
+    // Set PWADs details, provided via command line arguments
+    if (indexOfFileArg != -1) {
+      // We've processed the `-file` arg
+      indicesOfArgsProcessed[numberOfArgsProcessed++] = indexOfFileArg;
+
+      int indexOfPotentialPWadPath = indexOfFileArg + 1;
+      while (indexOfPotentialPWadPath < argc &&
+             argv[indexOfPotentialPWadPath][0] != '-') {
+        // We've processed this PWAD path
+        indicesOfArgsProcessed[numberOfArgsProcessed++] =
+            indexOfPotentialPWadPath;
+        numberOfPathsToPWads++;
+        indexOfPotentialPWadPath++;
+      }
+      // If we found at least one PWAD path, we can set `pathsToPWads` to point
+      // to the very first one found
+      if (numberOfPathsToPWads) {
+        int indexOfFirstPWadPath = indexOfFileArg + 1;
+        pathsToPWads = argv + indexOfFirstPWadPath;
+
+        printf("Game data: Using these %d PWAD files, in order:\n",
+               numberOfPathsToPWads);
+        for (int i = 0; i < numberOfPathsToPWads; i++) {
+          printf("    %s\n", pathsToPWads[i]);
+        }
+      }
+    }
+
+    // Create a new argv and argc to send to Doom, which should contain exactly
+    // the command line arguments that were not processed
+    int argcAfterProcessing = argc - numberOfArgsProcessed;
+    char *argvAfterProcessing[argcAfterProcessing];
+    // Copy over the arguments that were not processed, so they are passed as-is
+    // to Doom
+    for (int src = 0, dest = 0; src < argc; src++) {
+      bool argsWasNotProcessed = findIndexOfInt(src, indicesOfArgsProcessed,
+                                                numberOfArgsProcessed, 0) == -1;
+      if (argsWasNotProcessed) {
+        argvAfterProcessing[dest] = argv[src];
+        dest++;
+      }
+    }
+
+    printf("Calling doomgeneric_Create with these args: ");
+    for (int i = 0; i < argcAfterProcessing; i++) {
+      printf("%s ", argvAfterProcessing[i]);
+    }
+    printf("\n");
+
+    doomgeneric_Create(argcAfterProcessing, argvAfterProcessing);
 
     for (int i = 0;; i++) {
       doomgeneric_Tick();
