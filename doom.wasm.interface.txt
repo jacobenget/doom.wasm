@@ -8,6 +8,7 @@
 ##############################################################################
 
 imports:
+  function env.DG_PCXScreenshotTaken(i32, i32) -> ()
   function gameSaving.readSaveGame(i32, i32) -> (i32)
   function gameSaving.sizeOfSaveGame(i32) -> (i32)
   function gameSaving.writeSaveGame(i32, i32, i32) -> (i32)
@@ -20,13 +21,10 @@ imports:
   function ui.setWindowTitle(i32) -> ()
   function wasi_snapshot_preview1.fd_close(i32) -> (i32)
   function wasi_snapshot_preview1.fd_fdstat_get(i32, i32) -> (i32)
-  function wasi_snapshot_preview1.fd_fdstat_set_flags(i32, i32) -> (i32)
   function wasi_snapshot_preview1.fd_prestat_dir_name(i32, i32, i32) -> (i32)
   function wasi_snapshot_preview1.fd_prestat_get(i32, i32) -> (i32)
-  function wasi_snapshot_preview1.fd_read(i32, i32, i32, i32) -> (i32)
   function wasi_snapshot_preview1.fd_seek(i32, i64, i32, i32) -> (i32)
   function wasi_snapshot_preview1.fd_write(i32, i32, i32, i32) -> (i32)
-  function wasi_snapshot_preview1.path_open(i32, i32, i32, i32, i32, i64, i64, i32, i32) -> (i32)
   function wasi_snapshot_preview1.proc_exit(i32) -> ()
 
 exports:

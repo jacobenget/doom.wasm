@@ -26,6 +26,7 @@
 #include "i_system.h"
 
 #include "doomtype.h"
+#include "doomgeneric.h"
 
 #include "deh_str.h"
 #include "i_swap.h"
@@ -567,8 +568,7 @@ typedef struct {
 // WritePCXfile
 //
 
-void WritePCXfile(char *filename, byte *data, int width, int height,
-                  byte *palette) {
+void WritePCXfile(byte *data, int width, int height, byte *palette) {
   int i;
   int length;
   pcx_t *pcx;
@@ -611,7 +611,7 @@ void WritePCXfile(char *filename, byte *data, int width, int height,
 
   // write output file
   length = pack - (byte *)pcx;
-  M_WriteFile(filename, pcx, length);
+  DG_PCXScreenshotTaken((byte *)pcx, length);
 
   Z_Free(pcx);
 }
@@ -691,44 +691,19 @@ void WritePNGfile(char *filename, byte *data, int width, int height,
 // V_ScreenShot
 //
 
-void V_ScreenShot(char *format) {
-  int i;
-  char lbmname[16]; // haleyjd 20110213: BUG FIX - 12 is too small!
-  char *ext;
-
-  // find a file name to save it to
-
-#ifdef HAVE_LIBPNG
-  extern int png_screenshots;
-  if (png_screenshots) {
-    ext = "png";
-  } else
-#endif
-  {
-    ext = "pcx";
-  }
-
-  for (i = 0; i <= 99; i++) {
-    M_snprintf(lbmname, sizeof(lbmname), format, i, ext);
-
-    if (!M_FileExists(lbmname)) {
-      break; // file doesn't exist
-    }
-  }
-
-  if (i == 100) {
-    I_Error("V_ScreenShot: Couldn't create a PCX");
-  }
-
+void V_ScreenShot() {
 #ifdef HAVE_LIBPNG
   if (png_screenshots) {
+    // TODO: if writing of a PNG screeshot is ever enabled again we'll have to
+    // adjust this logic so it delegates to a doomgeneric function that handles
+    // the actual writing of the screenshot.
     WritePNGfile(lbmname, I_VideoBuffer, SCREENWIDTH, SCREENHEIGHT,
                  W_CacheLumpName(DEH_String("PLAYPAL"), PU_CACHE));
   } else
 #endif
   {
     // save the pcx file
-    WritePCXfile(lbmname, I_VideoBuffer, SCREENWIDTH, SCREENHEIGHT,
+    WritePCXfile(I_VideoBuffer, SCREENWIDTH, SCREENHEIGHT,
                  W_CacheLumpName(DEH_String("PLAYPAL"), PU_CACHE));
   }
 }
