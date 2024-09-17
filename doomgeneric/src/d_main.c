@@ -1135,29 +1135,8 @@ void D_DoomMain(void) {
   if (devparm)
     DEH_printf(D_DEVSTR);
 
-    // find which dir to use for config files
-
-#ifdef _WIN32
-
-  //!
-  // @platform windows
-  // @vanilla
-  //
-  // Save configuration data and savegames in c:\doomdata,
-  // allowing play from CD.
-  //
-
-  if (M_ParmExists("-cdrom")) {
-    printf(D_CDROM);
-
-    M_SetConfigDir("c:\\doomdata\\");
-  } else
-#endif
-  {
-    // Auto-detect the configuration dir.
-
-    M_SetConfigDir(NULL);
-  }
+  // Auto-detect the configuration dir.
+  M_SetConfigDir(NULL);
 
   //!
   // @arg <x>
