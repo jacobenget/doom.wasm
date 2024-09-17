@@ -3,6 +3,7 @@
 #include "doomkeys.h"
 #include "m_argv.h"
 #include "doomgeneric.h"
+#include "file_misc.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -183,23 +184,6 @@ int DG_GetKey(int *pressed, unsigned char *doomKey) {
   return 0;
 }
 
-//
-// Determine the length of an open file.
-//
-static long M_FileLength(FILE *handle) {
-  // save the current position in the file
-  long savedpos = ftell(handle);
-
-  // jump to the end and find the length
-  fseek(handle, 0, SEEK_END);
-  long length = ftell(handle);
-
-  // go back to the old location
-  fseek(handle, savedpos, SEEK_SET);
-
-  return length;
-}
-
 // These values are initialized upon startup
 char *pathToIWad;
 char **pathsToPWads;
@@ -214,7 +198,7 @@ static struct DG_WadFileBytes readWadFile(const char *pathToWadFile) {
 
   FILE *handle = fopen(pathToWadFile, "rb");
   if (handle != NULL) {
-    long fileLength = M_FileLength(handle);
+    long fileLength = FileLength(handle);
     unsigned char *wadData = malloc(fileLength);
     if (wadData != NULL) {
       size_t count = fread(wadData, 1, fileLength, handle);
@@ -393,16 +377,6 @@ void DG_DemoRecorded(const char *demoName, unsigned char *demoBytes,
   }
 }
 
-static bool fileExists(char *pathToFile) {
-  FILE *handle = fopen(pathToFile, "r");
-
-  bool fileExists = (handle != NULL);
-  if (handle != NULL) {
-    fclose(handle);
-  }
-  return fileExists;
-}
-
 void DG_PCXScreenshotTaken(unsigned char *screenshotBytes,
                            size_t screenshotSize) {
   const char *screenshotFileNameFormat = "DOOM%02i.pcx";
@@ -420,7 +394,7 @@ void DG_PCXScreenshotTaken(unsigned char *screenshotBytes,
   while (i <= maxScreenShotId) {
     snprintf(fileName, bufferLengthNeeded, screenshotFileNameFormat, i);
 
-    if (!fileExists(fileName)) {
+    if (!FileExists(fileName)) {
       break;
     } else {
       i++;
