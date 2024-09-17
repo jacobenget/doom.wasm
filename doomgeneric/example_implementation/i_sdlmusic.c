@@ -27,6 +27,7 @@
 #include "doomtype.h"
 #include "memio.h"
 #include "mus2mid.h"
+#include "file_misc.h"
 
 #include "deh_str.h"
 #include "i_sound.h"
@@ -388,7 +389,7 @@ static char *GetSubstituteMusicFile(void *data, size_t data_len) {
       // any fallbacks. But we always return a filename if it's
       // in the list, even if it's just so we can print an error
       // message to the user saying it doesn't exist.
-      if (M_FileExists(filename)) {
+      if (FileExists(filename)) {
         break;
       }
     }
@@ -970,7 +971,7 @@ static boolean ConvertMus(byte *musdata, int len, char *filename) {
   if (result == 0) {
     mem_get_buf(outstream, &outbuf, &outbuf_len);
 
-    M_WriteFile(filename, outbuf, outbuf_len);
+    WriteFile(filename, outbuf, outbuf_len);
   }
 
   mem_fclose(instream);
@@ -1015,7 +1016,7 @@ static void *I_SDL_RegisterSong(void *data, int len) {
   filename = M_TempFile("doom.mid");
 
   if (IsMid(data, len) && len < MAXMIDLENGTH) {
-    M_WriteFile(filename, data, len);
+    WriteFile(filename, data, len);
   } else {
     // Assume a MUS file and try to convert
 
