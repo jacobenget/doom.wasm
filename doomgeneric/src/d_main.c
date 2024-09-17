@@ -1136,7 +1136,7 @@ void D_DoomMain(void) {
     DEH_printf(D_DEVSTR);
 
   // Auto-detect the configuration dir.
-  M_SetConfigDir(NULL);
+  M_SetConfigDir();
 
   //!
   // @arg <x>

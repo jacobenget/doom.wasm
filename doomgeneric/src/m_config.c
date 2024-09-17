@@ -2090,22 +2090,9 @@ float M_GetFloatVariable(char *name) {
 // files are stored - default.cfg, chocolate-doom.cfg, savegames, etc.
 //
 
-void M_SetConfigDir(char *dir) {
-  // Use the directory that was passed, or find the default.
-
-  if (dir != NULL) {
-    configdir = dir;
-  } else {
-    configdir = "."; // Default to current directory
-  }
-
-  if (strcmp(configdir, "") != 0) {
-    printf("Using %s for configuration and saves\n", configdir);
-  }
-
-  // Make the directory if it doesn't already exist:
-
-  M_MakeDirectory(configdir);
+void M_SetConfigDir() {
+  configdir = "."; // Default to current directory
+  printf("Using %s for configuration and saves\n", configdir);
 }
 
 //
