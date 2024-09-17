@@ -56,6 +56,9 @@ static unsigned char convertToDoomKey(unsigned int key) {
   case SDLK_RALT:
     key = KEY_LALT;
     break;
+  case SDLK_F1:
+    key = KEY_F1;
+    break;
   case SDLK_F2:
     key = KEY_F2;
     break;
