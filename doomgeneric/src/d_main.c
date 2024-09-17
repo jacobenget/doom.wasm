@@ -647,11 +647,7 @@ static void SetMissionForPackName(char *pack_name) {
 //
 
 void D_IdentifyVersion(void) {
-  // gamemission is set up by the D_FindIWAD function.  But if
-  // we specify '-iwad', we have to identify using
-  // IdentifyIWADByName.  However, if the iwad does not match
-  // any known IWAD name, we may have a dilemma.  Try to
-  // identify by its contents.
+  // Try to identify the gamemission by its contents of the IWAD used.
 
   if (gamemission == none) {
     unsigned int i;
