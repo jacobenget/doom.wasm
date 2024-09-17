@@ -114,6 +114,15 @@ run: $(OUTPUT_DIR)/DOOM1.WAD $(OUTPUT)
 	@echo [Running SDL Doom with Shareware WAD]
 	cd $(OUTPUT_DIR); ./${OUTPUT_EXE_NAME} -iwad ../$<
 
+# Provide a way to run Doom in development mode.
+# Development mode is useful because taking a screenshot by pressing F1 is supported.
+#
+# Note that Doom is going to use the current working directory to hold its configuration data (e.g. .savegame/),
+# so when running Doom we make sure that directory is a directory not managed by source control.
+run-dev-mode: $(OUTPUT_DIR)/DOOM1.WAD $(OUTPUT)
+	@echo [Running SDL Doom with Shareware WAD, in development mode]
+	cd $(OUTPUT_DIR); ./${OUTPUT_EXE_NAME} -iwad ../$< -devparm
+
 # Note that Doom is going to use the current working directory to hold its configuration data (e.g. .savegame/),
 # so when running Doom we make sure that directory is a directory not managed by source control.
 run-with-test-pwad: $(OUTPUT)
