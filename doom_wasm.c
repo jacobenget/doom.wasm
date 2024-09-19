@@ -70,6 +70,7 @@ struct DB_BytesForAllWads DG_GetWads() {
 
     // Assign data each PWADs
     int numberOfPWads = numberOfWads - 1;
+    result.numberOfPWads = numberOfPWads;
     result.pWads = malloc(sizeof(struct DG_WadFileBytes) * numberOfPWads);
     for (int i = 0; i < numberOfPWads; i++) {
       result.pWads[i].data = dataForNextWad;
