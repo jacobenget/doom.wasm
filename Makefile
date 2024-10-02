@@ -115,16 +115,18 @@ $(OUTPUT_DIR)/wasi_snapshot_preview1-trampolines.wasm: wasi_snapshot_preview1-tr
 
 OUTPUT_INTERMEDIATE_WITH_SUPERFLUOUS_EXPORTS = $(OUTPUT_DIR)/doom-with-superfluous-exports.wasm
 
+BINARYEN_FLAGS = --enable-bulk-memory
+
 $(OUTPUT_INTERMEDIATE_WITH_SUPERFLUOUS_EXPORTS): $(OUTPUT_INTERMEDIATE_WITH_WASI_IMPORTS) $(OUTPUT_DIR)/wasi_snapshot_preview1-trampolines.wasm $(WASM_MERGE)
 	@echo [Merging the Doom WebAssembly module with wasi-snapshot-preview1 trampolines]
-	$(VB)$(WASM_MERGE) $< wasi-implementation $(word 2,$^) wasi_snapshot_preview1 -o $@ --enable-bulk-memory
+	$(VB)$(WASM_MERGE) $< wasi-implementation $(word 2,$^) wasi_snapshot_preview1 -o $@ $(BINARYEN_FLAGS)
 
 # Note: the wasm-metadce tool is very chatty, unconditionally (as far as I can tell) outputing details
 # about the unused exports. To prevent this mostly useless output from being seen we redirect stdout to
 # /dev/null unless VERBOSE is set to something other than 0.
 $(OUTPUT): $(OUTPUT_INTERMEDIATE_WITH_SUPERFLUOUS_EXPORTS) reachability_graph_for_wasm-metadce.json $(WASM_METADCE)
 	@echo [Removing from Doom WebAssembly module all exports not listed as reachable in $(word 2,$^)]
-	$(VB)$(WASM_METADCE) $< --graph-file $(word 2,$^) -o $@ --enable-bulk-memory $(if $(VERBOSE:0=),,> /dev/null)
+	$(VB)$(WASM_METADCE) $< --graph-file $(word 2,$^) -o $@ $(BINARYEN_FLAGS) $(if $(VERBOSE:0=),,> /dev/null)
 
 # Produce a text file that describes the imports and exports of the Doom WebAssembly module.
 $(OUTPUT_NAME).interface.txt: $(OUTPUT) utils/print-interface-of-wasm-module/
