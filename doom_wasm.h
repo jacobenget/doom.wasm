@@ -25,12 +25,12 @@ EXPORT void reportKeyUp(uint8_t doomKey);
 // *                             IMPORTED FUNCTIONS                            *
 // *****************************************************************************
 
-IMPORT_MODULE("loading") void onGameInit(int width, int height);
+IMPORT_MODULE("loading") void onGameInit(int32_t width, int32_t height);
 IMPORT_MODULE("loading")
-void getWadsSizes(int *numberOfWads, size_t *numberOfTotalBytesInAllWads);
+void getWadsSizes(int32_t *numberOfWads, size_t *numberOfTotalBytesInAllWads);
 IMPORT_MODULE("loading")
-void readDataForAllWads(unsigned char *wadDataDestination,
-                        int *byteLengthOfEachWad);
+void readDataForAllWads(uint8_t *wadDataDestination,
+                        int32_t *byteLengthOfEachWad);
 
 IMPORT_MODULE("ui") void drawFrame(uint32_t *screenBuffer);
 
@@ -43,12 +43,12 @@ IMPORT_MODULE("runtimeControl") void onExit(int32_t exitCode);
 
 // Return the size of the associated save game data, 0 in the case that no save
 // data exists for this slot
-IMPORT_MODULE("gameSaving") size_t sizeOfSaveGame(int gameSaveId);
+IMPORT_MODULE("gameSaving") size_t sizeOfSaveGame(int32_t gameSaveId);
 // Return the number of bytes read
 IMPORT_MODULE("gameSaving")
-size_t readSaveGame(int gameSaveId, unsigned char *dataDestination);
+size_t readSaveGame(int32_t gameSaveId, uint8_t *dataDestination);
 // Return the number of bytes written
 IMPORT_MODULE("gameSaving")
-size_t writeSaveGame(int gameSaveId, unsigned char *data, size_t length);
+size_t writeSaveGame(int32_t gameSaveId, uint8_t *data, size_t length);
 
 #endif /* DOOM_WASM_H_ */
