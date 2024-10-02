@@ -119,9 +119,9 @@ $(OUTPUT_NAME).interface.txt: $(OUTPUT) utils/print-interface-of-wasm-module/
 	${VB}$(MAKE) --directory=utils/print-interface-of-wasm-module/ run PATH_TO_WASM_MODULE=$(abspath $(OUTPUT)) >> $@
 
 
-##########################################################
-# Targets for managing the local dev environments
-##########################################################
+####################################################################
+# Targets for managing the local dev environments and local tools
+####################################################################
 
 DEV_VIRTUAL_ENVS_DIR = .dev_virtualenvs
 
@@ -140,12 +140,21 @@ RUST_UTILS = print-interface-of-wasm-module
 BUILD_RUST_UTILS = $(addprefix build-rust-util_, $(RUST_UTILS))
 REMOVE_ACTIVATE_LINK_FROM_RUST_UTILS = $(addprefix remove-hard-link-to-rust-venv_, $(RUST_UTILS))
 
-# Why build all of the Rust utils on dev-init? This is done to frontload all the work of building the dependencies of these utils.
-dev-init: install-pre-commit-hooks $(BUILD_RUST_UTILS) | ${DEV_PYTHON_VIRTUAL_ENV} ${DEV_RUST_VIRTUAL_ENV}
+# Each Binaryen utility needed should be listed here so it can be built during dev-init
+BINARYEN_DIR = .binaryen
+BINARYEN_UTIL_NAMES = wasm-as wasm-merge
+BINARYEN_UTILS = $(addprefix $(BINARYEN_DIR)/bin/, $(BINARYEN_UTIL_NAMES))
+
+WASM_AS = $(BINARYEN_DIR)/bin/wasm-as
+WASM_MERGE = $(BINARYEN_DIR)/bin/wasm-merge
+
+# Why build all of the Rust utils and Binaryen tools on dev-init? This is done to frontload all the work of building the dependencies of these utils.
+dev-init: install-pre-commit-hooks $(BUILD_RUST_UTILS) $(BINARYEN_UTILS) | ${DEV_PYTHON_VIRTUAL_ENV} ${DEV_RUST_VIRTUAL_ENV}
 
 dev-clean: uninstall-pre-commit-hooks $(REMOVE_ACTIVATE_LINK_FROM_RUST_UTILS)
 	${VB} rm -fr ${DEV_PYTHON_VIRTUAL_ENV}
 	${VB} rm -fr ${DEV_RUST_VIRTUAL_ENV}
+	${VB} rm -fr ${BINARYEN_DIR}
 
 install-pre-commit-hooks: | ${DEV_PYTHON_VIRTUAL_ENV}
 	@echo [Installing pre-commit hooks]
@@ -220,6 +229,21 @@ $(REMOVE_ACTIVATE_LINK_FROM_RUST_UTILS): remove-hard-link-to-rust-venv_%:
 	@echo [Removing hard link to Rust virtual env activate script that is in the util '$*']
 	${VB}rm utils/$*/$(HARD_LINK_TO_RUST_VIRTUAL_ENV_ACTIVATE_SCRIPT)
 
+${BINARYEN_DIR}:
+	@echo [Configuring a local copy of Binaryen tools source code]
+	${VB}git clone git@github.com:WebAssembly/binaryen.git --branch version_119 --depth 1 $@; \
+	cd $@; \
+	cmake -DBUILD_TESTS=OFF .;
+
+# Target for building any Binaryen utility listed in BINARYEN_UTILS
+#
+# Note: A binaryen tool can take a long time to build, like 10 minutes or more, and these tools could just be run
+# inside a docker container that has the tools pre-built, making it much quicker to build the main artifact of this
+# repo from scratch.
+# TODO: leverage Binaryen tools pre-built in an external docker image
+$(BINARYEN_UTILS): ${BINARYEN_DIR}/bin/%: ${BINARYEN_DIR}
+	@echo [Building the Binaryen util '$*']
+	${VB}$(MAKE) --directory=$< $*
 
 ##########################################################
 # Targets for manually running pre-commit tests
