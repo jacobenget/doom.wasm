@@ -24,17 +24,7 @@ imports:
 
 exports:
   function _initialize() -> ()
-  function fd_close(i32) -> (i32)
-  function fd_fdstat_get(i32, i32) -> (i32)
-  function fd_seek(i32, i64, i32, i32) -> (i32)
-  function fd_write(i32, i32, i32, i32) -> (i32)
   function initGame() -> ()
-  function internal__fd_close(i32) -> (i32)
-  function internal__fd_fdstat_get(i32, i32) -> (i32)
-  function internal__fd_seek(i32, i64, i32, i32) -> (i32)
-  function internal__fd_write(i32, i32, i32, i32) -> (i32)
-  function internal__proc_exit(i32) -> ()
-  function proc_exit(i32) -> ()
   function reportKeyDown(i32) -> ()
   function reportKeyUp(i32) -> ()
   function tickGame() -> ()
