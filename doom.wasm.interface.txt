@@ -20,7 +20,6 @@ imports:
   function runtimeControl.onExit(i32) -> ()
   function runtimeControl.sleepMs(i32) -> ()
   function ui.drawFrame(i32) -> ()
-  function ui.setWindowTitle(i32) -> ()
 
 exports:
   function _initialize() -> ()

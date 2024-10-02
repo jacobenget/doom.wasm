@@ -117,7 +117,15 @@ int DG_GetKey(int *pressed, uint8_t *doomKey) {
   return 0;
 }
 
-void DG_SetWindowTitle(const char *title) { setWindowTitle(title); }
+void DG_SetWindowTitle(const char *title) {
+  // Just do nothing.
+  //
+  // The title provided doesn't contain much useful information other than some
+  // identifier for which IWAD is being used, and since the user of this
+  // WebAssembly module is providing the IWAD used they already have the
+  // opportunity, without the help of Doom, to do anything custom related to the
+  // IWAD being used.
+}
 
 void DG_SleepMs(uint32_t ms) { sleepMs(ms); }
 
