@@ -113,9 +113,18 @@ $(OUTPUT_DIR)/wasi_snapshot_preview1-trampolines.wasm: wasi_snapshot_preview1-tr
 	@echo [Compiling the module that has wasi-snapshot-preview1 trampolines]
 	$(VB)$(WASM_AS) $< -o $@
 
-$(OUTPUT): $(OUTPUT_INTERMEDIATE_WITH_WASI_IMPORTS) $(OUTPUT_DIR)/wasi_snapshot_preview1-trampolines.wasm $(WASM_MERGE)
+OUTPUT_INTERMEDIATE_WITH_SUPERFLUOUS_EXPORTS = $(OUTPUT_DIR)/doom-with-superfluous-exports.wasm
+
+$(OUTPUT_INTERMEDIATE_WITH_SUPERFLUOUS_EXPORTS): $(OUTPUT_INTERMEDIATE_WITH_WASI_IMPORTS) $(OUTPUT_DIR)/wasi_snapshot_preview1-trampolines.wasm $(WASM_MERGE)
 	@echo [Merging the Doom WebAssembly module with wasi-snapshot-preview1 trampolines]
 	$(VB)$(WASM_MERGE) $< wasi-implementation $(word 2,$^) wasi_snapshot_preview1 -o $@ --enable-bulk-memory
+
+# Note: the wasm-metadce tool is very chatty, unconditionally (as far as I can tell) outputing details
+# about the unused exports. To prevent this mostly useless output from being seen we redirect stdout to
+# /dev/null unless VERBOSE is set to something other than 0.
+$(OUTPUT): $(OUTPUT_INTERMEDIATE_WITH_SUPERFLUOUS_EXPORTS) reachability_graph_for_wasm-metadce.json $(WASM_METADCE)
+	@echo [Removing from Doom WebAssembly module all exports not listed as reachable in $(word 2,$^)]
+	$(VB)$(WASM_METADCE) $< --graph-file $(word 2,$^) -o $@ --enable-bulk-memory $(if $(VERBOSE:0=),,> /dev/null)
 
 # Produce a text file that describes the imports and exports of the Doom WebAssembly module.
 $(OUTPUT_NAME).interface.txt: $(OUTPUT) utils/print-interface-of-wasm-module/
@@ -155,11 +164,12 @@ REMOVE_ACTIVATE_LINK_FROM_RUST_UTILS = $(addprefix remove-hard-link-to-rust-venv
 
 # Each Binaryen utility needed should be listed here so it can be built during dev-init
 BINARYEN_DIR = .binaryen
-BINARYEN_UTIL_NAMES = wasm-as wasm-merge
+BINARYEN_UTIL_NAMES = wasm-as wasm-merge wasm-metadce
 BINARYEN_UTILS = $(addprefix $(BINARYEN_DIR)/bin/, $(BINARYEN_UTIL_NAMES))
 
 WASM_AS = $(BINARYEN_DIR)/bin/wasm-as
 WASM_MERGE = $(BINARYEN_DIR)/bin/wasm-merge
+WASM_METADCE = $(BINARYEN_DIR)/bin/wasm-metadce
 
 # Why build all of the Rust utils and Binaryen tools on dev-init? This is done to frontload all the work of building the dependencies of these utils.
 dev-init: install-pre-commit-hooks $(BUILD_RUST_UTILS) $(BINARYEN_UTILS) | ${DEV_PYTHON_VIRTUAL_ENV} ${DEV_RUST_VIRTUAL_ENV}

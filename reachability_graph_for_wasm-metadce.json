@@ -1,0 +1,38 @@
+[
+  {
+    "name": "outside",
+    "reaches": [
+      "export-_initialize",
+      "export-initGame",
+      "export-reportKeyDown",
+      "export-reportKeyUp",
+      "export-tickGame",
+      "export-memory"
+    ],
+    "root": true
+  },
+  {
+    "name": "export-_initialize",
+    "export": "_initialize"
+  },
+  {
+    "name": "export-initGame",
+    "export": "initGame"
+  },
+  {
+    "name": "export-reportKeyDown",
+    "export": "reportKeyDown"
+  },
+  {
+    "name": "export-reportKeyUp",
+    "export": "reportKeyUp"
+  },
+  {
+    "name": "export-tickGame",
+    "export": "tickGame"
+  },
+  {
+    "name": "export-memory",
+    "export": "memory"
+  }
+]
