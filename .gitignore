@@ -7,3 +7,6 @@
 
 # Ignore any hard links to the script which activates the Rust virtual env
 /**/.rust_virtual_env_activate
+
+# Ignore the contents of the local copy of the binaryen tools
+/.binaryen
