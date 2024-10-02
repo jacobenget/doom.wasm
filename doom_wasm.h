@@ -33,7 +33,6 @@ void readDataForAllWads(unsigned char *wadDataDestination,
                         int *byteLengthOfEachWad);
 
 IMPORT_MODULE("ui") void drawFrame(uint32_t *screenBuffer);
-IMPORT_MODULE("ui") void setWindowTitle(const char *title); // TODO: remove this
 
 IMPORT_MODULE("console") void info(const char *message, size_t length);
 IMPORT_MODULE("console") void error(const char *message, size_t length);
