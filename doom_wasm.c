@@ -28,7 +28,7 @@
 // A global cache of which keys are currently pressed down, according to what
 // the user of this module has reported to via `reportKeyDown` and
 // `reportKeyUp`.
-static bool isKeyPressed[UINT8_MAX] = {false};
+static bool isKeyPressed[UINT8_MAX + 1] = {false};
 
 void initGame() {
   // Provide 0 command line arguments to Doom.
@@ -43,9 +43,27 @@ void initGame() {
 
 void tickGame() { doomgeneric_Tick(); }
 
-void reportKeyDown(uint8_t doomKey) { isKeyPressed[doomKey] = true; }
+void reportKeyDown(int32_t doomKey) {
+  if (0 <= doomKey && doomKey <= UINT8_MAX) {
+    isKeyPressed[doomKey] = true;
+  } else {
+    fprintf(stderr,
+            "The invalid value of %i was provided to `reportKeyDown`, which "
+            "only accepts values in the range [0, %i]\n",
+            doomKey, UINT8_MAX);
+  }
+}
 
-void reportKeyUp(uint8_t doomKey) { isKeyPressed[doomKey] = false; }
+void reportKeyUp(int32_t doomKey) {
+  if (0 <= doomKey && doomKey <= UINT8_MAX) {
+    isKeyPressed[doomKey] = false;
+  } else {
+    fprintf(stderr,
+            "The invalid value of %i was provided to `reportKeyUp`, which only "
+            "accepts values in the range [0, %i]\n",
+            doomKey, UINT8_MAX);
+  }
+}
 
 // *****************************************************************************
 // *                                    (2)                                    *
