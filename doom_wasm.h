@@ -18,8 +18,8 @@
 
 EXPORT void initGame();
 EXPORT void tickGame();
-EXPORT void reportKeyDown(uint8_t doomKey);
-EXPORT void reportKeyUp(uint8_t doomKey);
+EXPORT void reportKeyDown(int32_t doomKey);
+EXPORT void reportKeyUp(int32_t doomKey);
 
 // *****************************************************************************
 // *                             IMPORTED FUNCTIONS                            *
