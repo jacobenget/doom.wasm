@@ -113,6 +113,10 @@ $(OUTPUT_DIR)/wasi_snapshot_preview1-trampolines.wasm: wasi_snapshot_preview1-tr
 	@echo [Compiling the module that has wasi-snapshot-preview1 trampolines]
 	$(VB)$(WASM_AS) $< -o $@
 
+$(OUTPUT_DIR)/global_constants.wasm: global_constants.wat $(WASM_AS)
+	@echo [Compiling the module that defines some global constants]
+	$(VB)$(WASM_AS) $< -o $@
+
 OUTPUT_INTERMEDIATE_WITH_SUPERFLUOUS_EXPORTS = $(OUTPUT_DIR)/doom-with-superfluous-exports.wasm
 
 BINARYEN_FLAGS = --enable-bulk-memory
@@ -121,12 +125,18 @@ $(OUTPUT_INTERMEDIATE_WITH_SUPERFLUOUS_EXPORTS): $(OUTPUT_INTERMEDIATE_WITH_WASI
 	@echo [Merging the Doom WebAssembly module with wasi-snapshot-preview1 trampolines]
 	$(VB)$(WASM_MERGE) $< wasi-implementation $(word 2,$^) wasi_snapshot_preview1 -o $@ $(BINARYEN_FLAGS)
 
+OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS = $(OUTPUT_DIR)/doom-with-trimmed-exports.wasm
+
 # Note: the wasm-metadce tool is very chatty, unconditionally (as far as I can tell) outputing details
 # about the unused exports. To prevent this mostly useless output from being seen we redirect stdout to
 # /dev/null unless VERBOSE is set to something other than 0.
-$(OUTPUT): $(OUTPUT_INTERMEDIATE_WITH_SUPERFLUOUS_EXPORTS) reachability_graph_for_wasm-metadce.json $(WASM_METADCE)
+$(OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS): $(OUTPUT_INTERMEDIATE_WITH_SUPERFLUOUS_EXPORTS) reachability_graph_for_wasm-metadce.json $(WASM_METADCE)
 	@echo [Removing from Doom WebAssembly module all exports not listed as reachable in $(word 2,$^)]
 	$(VB)$(WASM_METADCE) $< --graph-file $(word 2,$^) -o $@ $(BINARYEN_FLAGS) $(if $(VERBOSE:0=),,> /dev/null)
+
+$(OUTPUT): $(OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS) $(OUTPUT_DIR)/global_constants.wasm $(WASM_MERGE)
+	@echo [Augment the Doom WebAssembly module with some global constants]
+	$(VB)$(WASM_MERGE) $< doom $(word 2,$^) global-constants -o $@ $(BINARYEN_FLAGS)
 
 # Produce a text file that describes the imports and exports of the Doom WebAssembly module.
 $(OUTPUT_NAME).interface.txt: $(OUTPUT) utils/print-interface-of-wasm-module/
