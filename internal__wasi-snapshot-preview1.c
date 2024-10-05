@@ -45,7 +45,26 @@ EXPORT int32_t internal__fd_close(int32_t fd);
 // *             which may use functions imported via WebAssembly              *
 // *****************************************************************************
 
-void internal__proc_exit(int32_t exitCode) { onExit(exitCode); }
+void internal__proc_exit(int32_t exitCode) {
+  // Effectively do nothing for now during "process exit".
+  //
+  // Why? We have yet to encounter a situation where this function is called.
+  // This IS surprising, but is likely due to the game just 'crashing' whenever
+  // the user tries to exit the game.
+  //
+  // For instance, when run in the browser, the browser console logs the
+  // following error when an attempt is made to exit the game from the "Quit
+  // Game" menu option:
+  //    Uncaught RuntimeError: null function or function signature mismatch
+  //
+  // So, the plan should be to first fix the issues preventing the game from
+  // cleanly exiting. Then the implementation of this function will matter, and
+  // we can implement it by calling an imported onExit(exitCode) function
+  // provided from the outside world, giving the outside world a chance to
+  // respond to the user wishing to exit.
+  fprintf(stderr, "Surprise! `internal__proc_exit` was called but we haven't "
+                  "yet implemented it to respond to requests to exit!");
+}
 
 int32_t internal__fd_fdstat_get(int32_t fd, __wasi_fdstat_t *fdstat) {
 

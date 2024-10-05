@@ -39,7 +39,6 @@ IMPORT_MODULE("console") void error(const char *message, size_t length);
 
 IMPORT_MODULE("runtimeControl") void sleepMs(uint32_t ms);
 IMPORT_MODULE("runtimeControl") uint32_t getTicksMs();
-IMPORT_MODULE("runtimeControl") void onExit(int32_t exitCode);
 
 // Return the size of the associated save game data, 0 in the case that no save
 // data exists for this slot
