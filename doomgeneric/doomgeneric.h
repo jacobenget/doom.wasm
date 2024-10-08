@@ -55,7 +55,7 @@ void DG_Init();
 struct DB_BytesForAllWads DG_GetWads();
 void DG_DrawFrame();
 void DG_SleepMs(uint32_t ms);
-uint32_t DG_GetTicksMs();
+uint64_t DG_GetTicksMs();
 int DG_GetKey(int *pressed, unsigned char *key);
 void DG_SetWindowTitle(const char *title);
 // Return NULL if there is no save game data saved to the given slot

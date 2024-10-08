@@ -16,7 +16,7 @@ imports:
   function loading.getWadsSizes(i32, i32) -> ()
   function loading.onGameInit(i32, i32) -> ()
   function loading.readDataForAllWads(i32, i32) -> ()
-  function runtimeControl.getTicksMs() -> (i32)
+  function runtimeControl.getTicksMs() -> (i64)
   function ui.drawFrame(i32) -> ()
 
 exports:

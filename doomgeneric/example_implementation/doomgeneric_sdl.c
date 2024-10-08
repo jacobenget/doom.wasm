@@ -164,7 +164,7 @@ void DG_DrawFrame() {
 
 void DG_SleepMs(uint32_t ms) { SDL_Delay(ms); }
 
-uint32_t DG_GetTicksMs() { return SDL_GetTicks(); }
+uint64_t DG_GetTicksMs() { return SDL_GetTicks(); }
 
 int DG_GetKey(int *pressed, unsigned char *doomKey) {
   if (s_KeyQueueReadIndex == s_KeyQueueWriteIndex) {
