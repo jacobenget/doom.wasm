@@ -166,7 +166,7 @@ void DG_SleepMs(uint32_t ms) {
   }
 }
 
-uint32_t DG_GetTicksMs() { return getTicksMs(); }
+uint64_t DG_GetTicksMs() { return getTicksMs(); }
 
 //
 // Features related to the reading and writing of saved games
