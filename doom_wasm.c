@@ -145,7 +145,26 @@ void DG_SetWindowTitle(const char *title) {
   // IWAD being used.
 }
 
-void DG_SleepMs(uint32_t ms) { sleepMs(ms); }
+void DG_SleepMs(uint32_t ms) {
+  // Doom only ever calls DG_SleepMs with an arg of '1', and in those cases Doom
+  // is in a busy-wait loop polling DG_GetTicksMs between calls to DG_SleepMs(1)
+  // in order to spin until a target amount of time has passed.
+  //
+  // In other words, Doom doesn't actually depend upon DG_SleepMs(1) doing
+  // anything other than returning in a relatively short amount of time.
+  //
+  // We can accomplish that by just returning immediately instead of depending
+  // upon some lower-level feature that accomplishes something like actual
+  // sleeping.
+  if (ms == 1) {
+    // Do nothing. See comment above.
+  } else {
+    fprintf(stderr,
+            "DG_SleepMs called with an `ms` value of %u, which is not 1. This "
+            "was unexpected and not currently supported!",
+            ms);
+  }
+}
 
 uint32_t DG_GetTicksMs() { return getTicksMs(); }
 
