@@ -33,7 +33,7 @@
 
 static uint32_t basetime = 0;
 
-int I_GetTicks(void) { return DG_GetTicksMs(); }
+uint32_t I_GetTicks(void) { return DG_GetTicksMs(); }
 
 int I_GetTime(void) {
   uint32_t ticks;
