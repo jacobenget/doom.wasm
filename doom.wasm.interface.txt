@@ -17,7 +17,6 @@ imports:
   function loading.onGameInit(i32, i32) -> ()
   function loading.readDataForAllWads(i32, i32) -> ()
   function runtimeControl.getTicksMs() -> (i32)
-  function runtimeControl.sleepMs(i32) -> ()
   function ui.drawFrame(i32) -> ()
 
 exports:

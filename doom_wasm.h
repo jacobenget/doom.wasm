@@ -37,7 +37,6 @@ IMPORT_MODULE("ui") void drawFrame(uint32_t *screenBuffer);
 IMPORT_MODULE("console") void info(const char *message, size_t length);
 IMPORT_MODULE("console") void error(const char *message, size_t length);
 
-IMPORT_MODULE("runtimeControl") void sleepMs(uint32_t ms);
 IMPORT_MODULE("runtimeControl") uint32_t getTicksMs();
 
 // Return the size of the associated save game data, 0 in the case that no save
