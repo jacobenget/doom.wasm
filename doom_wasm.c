@@ -78,13 +78,14 @@ void DG_Init() { onGameInit(DOOMGENERIC_RESX, DOOMGENERIC_RESY); }
 struct DB_BytesForAllWads DG_GetWads() {
   struct DB_BytesForAllWads result = {0};
 
-  int numberOfWads;
-  size_t numberOfTotalBytesInAllWads;
+  int numberOfWads = 0;
+  size_t numberOfTotalBytesInAllWads = 0;
   getWadsSizes(&numberOfWads, &numberOfTotalBytesInAllWads);
 
   if (numberOfWads > 0) {
     unsigned char *wadData = malloc(numberOfTotalBytesInAllWads);
     int byteLengthOfEachWad[numberOfWads];
+    memset(byteLengthOfEachWad, 0, sizeof(byteLengthOfEachWad));
     readDataForAllWads(wadData, byteLengthOfEachWad);
 
     unsigned char *dataForNextWad = wadData;
