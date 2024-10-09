@@ -77,15 +77,13 @@ $(OUTPUT_INTERMEDIATE_WITH_WASI_IMPORTS): $(OBJS) $(OBJS_WASM_SPECIFIC)
 
 $(OBJS): | $(OUTPUT_DIR)
 
-$(OUTPUT_DIR):
-	@echo [Creating output folder '$@']
-	$(VB)mkdir -p $(OUTPUT_DIR)
-
 $(OBJS_WASM_SPECIFIC): | $(OUTPUT_DIR_WASM_SPECIFIC)
 
-$(OUTPUT_DIR_WASM_SPECIFIC):
+OUTPUT_DIRS = $(OUTPUT_DIR) $(OUTPUT_DIR_WASM_SPECIFIC)
+
+$(OUTPUT_DIRS):
 	@echo [Creating output folder '$@']
-	$(VB)mkdir -p $(OUTPUT_DIR_WASM_SPECIFIC)
+	$(VB)mkdir -p $@
 
 # Produce object files by compiling the related source file, but make sure that compiling happens via the WASI SDK.
 # We do this by detecting when the literal phrase 'wasi' DOESN'T appear in the path to the compiler
