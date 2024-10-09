@@ -133,7 +133,7 @@ $(OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS): $(OUTPUT_INTERMEDIATE_WITH_SUPERFLU
 	$(VB)$(WASM_METADCE) $< --graph-file $(word 2,$^) -o $@ $(BINARYEN_FLAGS) $(if $(VERBOSE:0=),,> /dev/null)
 
 $(OUTPUT): $(OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS) $(OUTPUT_DIR)/global_constants.wasm $(WASM_MERGE)
-	@echo [Augment the Doom WebAssembly module with some global constants]
+	@echo [Augmenting the Doom WebAssembly module with some global constants]
 	$(VB)$(WASM_MERGE) $< doom $(word 2,$^) global-constants -o $@ $(BINARYEN_FLAGS)
 
 # Produce a text file that describes the imports and exports of the Doom WebAssembly module.
