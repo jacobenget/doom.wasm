@@ -38,4 +38,4 @@ exports:
   global KEY_TAB(i32, mutable = false)
   global KEY_UPARROW(i32, mutable = false)
   global KEY_USE(i32, mutable = false)
-  memory memory(min = 8, max = ∞)
+  memory memory(min = 72, max = ∞)
