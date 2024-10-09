@@ -98,7 +98,7 @@ $(OUTPUT_DIR)/%.o:	doomgeneric/src/%.c
 		${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $@; \
 	fi
 
-$(OUTPUT_DIR_WASM_SPECIFIC)/%.o:	%.c
+$(OUTPUT_DIR_WASM_SPECIFIC)/%.o:	src/%.c
 	$(VB)if echo "$(CC)" | grep -q "wasi"; then \
 		echo [Compiling $<]; \
 		$(CC) $(CFLAGS) -I$(DIR_CONTAINING_THIS_MAKEFILE)/doomgeneric -c $< -o $@; \
@@ -107,11 +107,11 @@ $(OUTPUT_DIR_WASM_SPECIFIC)/%.o:	%.c
 		${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $@; \
 	fi
 
-$(OUTPUT_DIR)/wasi_snapshot_preview1-trampolines.wasm: wasi_snapshot_preview1-trampolines.wat $(WASM_AS)
+$(OUTPUT_DIR)/wasi_snapshot_preview1-trampolines.wasm: src/wasi_snapshot_preview1-trampolines.wat $(WASM_AS)
 	@echo [Compiling the module that has wasi-snapshot-preview1 trampolines]
 	$(VB)$(WASM_AS) $< -o $@
 
-$(OUTPUT_DIR)/global_constants.wasm: global_constants.wat $(WASM_AS)
+$(OUTPUT_DIR)/global_constants.wasm: src/global_constants.wat $(WASM_AS)
 	@echo [Compiling the module that defines some global constants]
 	$(VB)$(WASM_AS) $< -o $@
 
@@ -128,7 +128,7 @@ OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS = $(OUTPUT_DIR)/doom-with-trimmed-expor
 # Note: the wasm-metadce tool is very chatty, unconditionally (as far as I can tell) outputing details
 # about the unused exports. To prevent this mostly useless output from being seen we redirect stdout to
 # /dev/null unless VERBOSE is set to something other than 0.
-$(OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS): $(OUTPUT_INTERMEDIATE_WITH_SUPERFLUOUS_EXPORTS) reachability_graph_for_wasm-metadce.json $(WASM_METADCE)
+$(OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS): $(OUTPUT_INTERMEDIATE_WITH_SUPERFLUOUS_EXPORTS) src/reachability_graph_for_wasm-metadce.json $(WASM_METADCE)
 	@echo [Removing from Doom WebAssembly module all exports not listed as reachable in $(word 2,$^)]
 	$(VB)$(WASM_METADCE) $< --graph-file $(word 2,$^) -o $@ $(BINARYEN_FLAGS) $(if $(VERBOSE:0=),,> /dev/null)
 
