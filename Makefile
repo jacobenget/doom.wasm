@@ -111,30 +111,49 @@ $(OUTPUT_DIR)/wasi_snapshot_preview1-trampolines.wasm: src/wasi_snapshot_preview
 	@echo [Compiling the module that has wasi-snapshot-preview1 trampolines]
 	$(VB)$(WASM_AS) $< -o $@
 
+$(OUTPUT_DIR)/merge-two-initialization-functions-into-one.wasm: src/merge-two-initialization-functions-into-one.wat $(WASM_AS)
+	@echo [Compiling the module that combines two init functions into one]
+	$(VB)$(WASM_AS) $< -o $@
+
 $(OUTPUT_DIR)/global_constants.wasm: src/global_constants.wat $(WASM_AS)
 	@echo [Compiling the module that defines some global constants]
 	$(VB)$(WASM_AS) $< -o $@
 
-OUTPUT_INTERMEDIATE_WITH_SUPERFLUOUS_EXPORTS = $(OUTPUT_DIR)/doom-with-superfluous-exports.wasm
-
 BINARYEN_FLAGS = --enable-bulk-memory
 
-$(OUTPUT_INTERMEDIATE_WITH_SUPERFLUOUS_EXPORTS): $(OUTPUT_RAW_FROM_LINKING) $(OUTPUT_DIR)/wasi_snapshot_preview1-trampolines.wasm $(WASM_MERGE)
+# After compilation and linking has finished the Doom WebAssembly module passes through a few custom
+# transformations before it's considered complete:
+#
+#
+#   1. All needed `wasi_snapshot_preview1` imports are filled by calling back into similarly named exports
+OUTPUT_INTERMEDIATE_WITH_WASI_HOLES_FILLED = $(OUTPUT_DIR)/doom-with-wasi-holes-filled.wasm
+$(OUTPUT_INTERMEDIATE_WITH_WASI_HOLES_FILLED): $(OUTPUT_RAW_FROM_LINKING) $(OUTPUT_DIR)/wasi_snapshot_preview1-trampolines.wasm $(WASM_MERGE)
 	@echo [Merging the Doom WebAssembly module with wasi-snapshot-preview1 trampolines]
 	$(VB)$(WASM_MERGE) $< wasi-implementation $(word 2,$^) wasi_snapshot_preview1 -o $@ $(BINARYEN_FLAGS)
-
+#
+#
+#   2. All exports that are not allow-listed are removed
 OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS = $(OUTPUT_DIR)/doom-with-trimmed-exports.wasm
-
-# Note: the wasm-metadce tool is very chatty, unconditionally (as far as I can tell) outputing details
-# about the unused exports. To prevent this mostly useless output from being seen we redirect stdout to
-# /dev/null unless VERBOSE is set to something other than 0.
-$(OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS): $(OUTPUT_INTERMEDIATE_WITH_SUPERFLUOUS_EXPORTS) src/reachability_graph_for_wasm-metadce.json $(WASM_METADCE)
+$(OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS): $(OUTPUT_INTERMEDIATE_WITH_WASI_HOLES_FILLED) src/reachability_graph_for_wasm-metadce.json $(WASM_METADCE)
 	@echo [Removing from Doom WebAssembly module all exports not listed as reachable in $(word 2,$^)]
+#     Note: the wasm-metadce tool is very chatty, unconditionally (as far as I can tell) outputing details
+#     about the unused exports. To prevent this mostly useless output from being seen we redirect stdout to
+#     /dev/null unless VERBOSE is set to something other than 0.
 	$(VB)$(WASM_METADCE) $< --graph-file $(word 2,$^) -o $@ $(BINARYEN_FLAGS) $(if $(VERBOSE:0=),,> /dev/null)
-
-$(OUTPUT): $(OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS) $(OUTPUT_DIR)/global_constants.wasm $(WASM_MERGE)
+#
+#
+#   3. Many global constants are added
+#				- Why? Clang/llvm toolchain does not currently support exporting global constants from C source code.
+#					So we provide useful global constants to our users by merging them into the module this way instead.
+OUTPUT_INTERMEDIATE_WITH_GLOBAL_CONSTANTS_ADDED = $(OUTPUT_DIR)/doom-with-global-constants-added.wasm
+$(OUTPUT_INTERMEDIATE_WITH_GLOBAL_CONSTANTS_ADDED): $(OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS) $(OUTPUT_DIR)/global_constants.wasm $(WASM_MERGE)
 	@echo [Augmenting the Doom WebAssembly module with some global constants]
 	$(VB)$(WASM_MERGE) $< doom $(word 2,$^) global-constants -o $@ $(BINARYEN_FLAGS)
+
+$(OUTPUT): $(OUTPUT_INTERMEDIATE_WITH_GLOBAL_CONSTANTS_ADDED)
+	@echo [Producing final Doom WebAssembly]
+	$(VB)cp $< $@
+
 
 # Produce a text file that describes the imports and exports of the Doom WebAssembly module.
 $(OUTPUT_NAME).interface.txt: $(OUTPUT) utils/print-interface-of-wasm-module/
