@@ -30,7 +30,7 @@
 // `reportKeyUp`.
 static bool isKeyPressed[UINT8_MAX + 1] = {false};
 
-void initGame() {
+void _initializeDoom() {
   // Provide 0 command line arguments to Doom.
   // Any configuration knobs we end up exposing via WebAssembly that would
   // usually be handled by command line arguments will instead be handled in a

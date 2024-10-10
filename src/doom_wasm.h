@@ -16,7 +16,17 @@
 // *                             EXPORTED FUNCTIONS                            *
 // *****************************************************************************
 
-EXPORT void initGame();
+// NOTE: `_initializeDoom` is exported and then externally combined with the
+// auto-generated and exported function `_initialize` to produce the single
+// exported function named `initGame`.
+//
+// This is done so the user of this WebAssembly module only has one exported
+// 'init' function they're expected to call: `initGame`.
+//
+// ps. An `_initialize` function is auto-generated and then exported because
+// this module is built as a WASI 'reactor', see here:
+// https://github.com/WebAssembly/WASI/blob/main/legacy/application-abi.md#current-unstable-abi
+EXPORT void _initializeDoom();
 EXPORT void tickGame();
 EXPORT void reportKeyDown(int32_t doomKey);
 EXPORT void reportKeyUp(int32_t doomKey);
