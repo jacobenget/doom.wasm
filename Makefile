@@ -33,6 +33,7 @@ OUTPUT_DIR_WASM_SPECIFIC = $(OUTPUT_DIR)/wasm_specific
 OUTPUT_NAME = doom.wasm
 OUTPUT = $(OUTPUT_DIR)/$(OUTPUT_NAME)
 OUTPUT_RAW_FROM_LINKING = $(OUTPUT_DIR)/doom-directly-after-linking.wasm
+OUTPUT_UTIL_WASM_MODULES = $(OUTPUT_DIR)/util-wasm-modules
 
 SRC_DOOM = dummy.c am_map.c doomdef.c doomstat.c dstrings.c d_event.c d_items.c d_iwad.c d_loop.c d_main.c d_mode.c d_net.c f_finale.c f_wipe.c g_game.c hu_lib.c hu_stuff.c info.c i_cdmus.c i_endoom.c i_joystick.c i_scale.c i_sound.c i_system.c i_timer.c memio.c m_argv.c m_bbox.c m_cheat.c m_config.c m_controls.c m_fixed.c m_menu.c m_misc.c m_random.c p_ceilng.c p_doors.c p_enemy.c p_floor.c p_inter.c p_lights.c p_map.c p_maputl.c p_mobj.c p_plats.c p_pspr.c p_saveg.c p_setup.c p_sight.c p_spec.c p_switch.c p_telept.c p_tick.c p_user.c r_bsp.c r_data.c r_draw.c r_main.c r_plane.c r_segs.c r_sky.c r_things.c sha1.c sounds.c statdump.c st_lib.c st_stuff.c s_sound.c tables.c v_video.c wi_stuff.c w_checksum.c w_file.c w_wad.c z_zone.c i_input.c i_video.c doomgeneric.c
 SRC_DOOM_WASM_SPECIFIC = doom_wasm.c internal__wasi-snapshot-preview1.c
@@ -79,7 +80,7 @@ $(OBJS): | $(OUTPUT_DIR)
 
 $(OBJS_WASM_SPECIFIC): | $(OUTPUT_DIR_WASM_SPECIFIC)
 
-OUTPUT_DIRS = $(OUTPUT_DIR) $(OUTPUT_DIR_WASM_SPECIFIC)
+OUTPUT_DIRS = $(OUTPUT_DIR) $(OUTPUT_DIR_WASM_SPECIFIC) $(OUTPUT_UTIL_WASM_MODULES)
 
 $(OUTPUT_DIRS):
 	@echo [Creating output folder \'$@\']
@@ -107,16 +108,9 @@ $(OUTPUT_DIR_WASM_SPECIFIC)/%.o:	src/%.c
 		${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $@; \
 	fi
 
-$(OUTPUT_DIR)/wasi_snapshot_preview1-trampolines.wasm: src/wat/wasi_snapshot_preview1-trampolines.wat $(WASM_AS)
-	@echo [Compiling the module that has wasi-snapshot-preview1 trampolines]
-	$(VB)$(WASM_AS) $< -o $@
-
-$(OUTPUT_DIR)/merge-two-initialization-functions-into-one.wasm: src/wat/merge-two-initialization-functions-into-one.wat $(WASM_AS)
-	@echo [Compiling the module that combines two init functions into one]
-	$(VB)$(WASM_AS) $< -o $@
-
-$(OUTPUT_DIR)/global-constants.wasm: src/wat/global-constants.wat $(WASM_AS)
-	@echo [Compiling the module that defines some global constants]
+# Compile .wat files in src/wat in order to produce an associated .wasm module in $(OUTPUT_DIR)/util-wasm-modules
+$(OUTPUT_UTIL_WASM_MODULES)/%.wasm: src/wat/%.wat $(WASM_AS) | $(OUTPUT_UTIL_WASM_MODULES)
+	@echo [Compiling WAT file \'$<\']
 	$(VB)$(WASM_AS) $< -o $@
 
 BINARYEN_FLAGS = --enable-bulk-memory
@@ -127,14 +121,14 @@ BINARYEN_FLAGS = --enable-bulk-memory
 #
 #   1. All needed `wasi_snapshot_preview1` imports are filled by calling back into similarly named exports
 OUTPUT_INTERMEDIATE_WITH_WASI_HOLES_FILLED = $(OUTPUT_DIR)/doom-with-wasi-holes-filled.wasm
-$(OUTPUT_INTERMEDIATE_WITH_WASI_HOLES_FILLED): $(OUTPUT_RAW_FROM_LINKING) $(OUTPUT_DIR)/wasi_snapshot_preview1-trampolines.wasm $(WASM_MERGE)
+$(OUTPUT_INTERMEDIATE_WITH_WASI_HOLES_FILLED): $(OUTPUT_RAW_FROM_LINKING) $(OUTPUT_UTIL_WASM_MODULES)/wasi_snapshot_preview1-trampolines.wasm $(WASM_MERGE)
 	@echo [Merging the Doom WebAssembly module with wasi-snapshot-preview1 trampolines]
 	$(VB)$(WASM_MERGE) $< wasi-implementation $(word 2,$^) wasi_snapshot_preview1 -o $@ $(BINARYEN_FLAGS)
 #
 #
 #   2. Multiple `initialization` functions are merged into a single one
 OUTPUT_INTERMEDIATE_WITH_INIT_FUNCTIONS_MERGED = $(OUTPUT_DIR)/doom-with-init-functions-merged.wasm
-$(OUTPUT_INTERMEDIATE_WITH_INIT_FUNCTIONS_MERGED): $(OUTPUT_INTERMEDIATE_WITH_WASI_HOLES_FILLED) $(OUTPUT_DIR)/merge-two-initialization-functions-into-one.wasm $(WASM_MERGE)
+$(OUTPUT_INTERMEDIATE_WITH_INIT_FUNCTIONS_MERGED): $(OUTPUT_INTERMEDIATE_WITH_WASI_HOLES_FILLED) $(OUTPUT_UTIL_WASM_MODULES)/merge-two-initialization-functions-into-one.wasm $(WASM_MERGE)
 	@echo [Merging the Doom WebAssembly module with module that combines both init functions]
 	$(VB)$(WASM_MERGE) $< has-two-init-functions $(word 2,$^) merges-init-functions -o $@ $(BINARYEN_FLAGS)
 #
@@ -153,7 +147,7 @@ $(OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS): $(OUTPUT_INTERMEDIATE_WITH_INIT_FUN
 #				- Why? Clang/llvm toolchain does not currently support exporting global constants from C source code.
 #					So we provide useful global constants to our users by merging them into the module this way instead.
 OUTPUT_INTERMEDIATE_WITH_GLOBAL_CONSTANTS_ADDED = $(OUTPUT_DIR)/doom-with-global-constants-added.wasm
-$(OUTPUT_INTERMEDIATE_WITH_GLOBAL_CONSTANTS_ADDED): $(OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS) $(OUTPUT_DIR)/global-constants.wasm $(WASM_MERGE)
+$(OUTPUT_INTERMEDIATE_WITH_GLOBAL_CONSTANTS_ADDED): $(OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS) $(OUTPUT_UTIL_WASM_MODULES)/global-constants.wasm $(WASM_MERGE)
 	@echo [Augmenting the Doom WebAssembly module with some global constants]
 	$(VB)$(WASM_MERGE) $< doom $(word 2,$^) global-constants -o $@ $(BINARYEN_FLAGS)
 
