@@ -132,9 +132,16 @@ $(OUTPUT_INTERMEDIATE_WITH_WASI_HOLES_FILLED): $(OUTPUT_RAW_FROM_LINKING) $(OUTP
 	$(VB)$(WASM_MERGE) $< wasi-implementation $(word 2,$^) wasi_snapshot_preview1 -o $@ $(BINARYEN_FLAGS)
 #
 #
-#   2. All exports that are not allow-listed are removed
+#   2. Multiple `initialization` functions are merged into a single one
+OUTPUT_INTERMEDIATE_WITH_INIT_FUNCTIONS_MERGED = $(OUTPUT_DIR)/doom-with-init-functions-merged.wasm
+$(OUTPUT_INTERMEDIATE_WITH_INIT_FUNCTIONS_MERGED): $(OUTPUT_INTERMEDIATE_WITH_WASI_HOLES_FILLED) $(OUTPUT_DIR)/merge-two-initialization-functions-into-one.wasm $(WASM_MERGE)
+	@echo [Merging the Doom WebAssembly module with module that combines both init functions]
+	$(VB)$(WASM_MERGE) $< has-two-init-functions $(word 2,$^) merges-init-functions -o $@ $(BINARYEN_FLAGS)
+#
+#
+#   3. All exports that are not allow-listed are removed
 OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS = $(OUTPUT_DIR)/doom-with-trimmed-exports.wasm
-$(OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS): $(OUTPUT_INTERMEDIATE_WITH_WASI_HOLES_FILLED) src/reachability_graph_for_wasm-metadce.json $(WASM_METADCE)
+$(OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS): $(OUTPUT_INTERMEDIATE_WITH_INIT_FUNCTIONS_MERGED) src/reachability_graph_for_wasm-metadce.json $(WASM_METADCE)
 	@echo [Removing from Doom WebAssembly module all exports not listed as reachable in $(word 2,$^)]
 #     Note: the wasm-metadce tool is very chatty, unconditionally (as far as I can tell) outputing details
 #     about the unused exports. To prevent this mostly useless output from being seen we redirect stdout to
@@ -142,7 +149,7 @@ $(OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS): $(OUTPUT_INTERMEDIATE_WITH_WASI_HOL
 	$(VB)$(WASM_METADCE) $< --graph-file $(word 2,$^) -o $@ $(BINARYEN_FLAGS) $(if $(VERBOSE:0=),,> /dev/null)
 #
 #
-#   3. Many global constants are added
+#   4. Many global constants are added
 #				- Why? Clang/llvm toolchain does not currently support exporting global constants from C source code.
 #					So we provide useful global constants to our users by merging them into the module this way instead.
 OUTPUT_INTERMEDIATE_WITH_GLOBAL_CONSTANTS_ADDED = $(OUTPUT_DIR)/doom-with-global-constants-added.wasm
