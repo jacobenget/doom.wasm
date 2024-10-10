@@ -114,7 +114,7 @@ int32_t internal__fd_write(int32_t fd, const __wasi_ciovec_t *iovs,
                            int32_t iovs_len, uint32_t *nwritten) {
 
   void (*characterSink)(const char *message, size_t length) =
-      (fd == STDOUT_FILENO) ? info : error;
+      (fd == STDOUT_FILENO) ? onInfoMessage : onErrorMessage;
   char *lineBuffer = (fd == STDOUT_FILENO) ? lineBuffer_info : lineBuffer_error;
   size_t *lengthOfCurrentLine_ptr = (fd == STDOUT_FILENO)
                                         ? &lengthOfCurrentLine_info

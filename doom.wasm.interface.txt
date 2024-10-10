@@ -8,15 +8,15 @@
 ##############################################################################
 
 imports:
-  function console.error(i32, i32) -> ()
-  function console.info(i32, i32) -> ()
+  function console.onErrorMessage(i32, i32) -> ()
+  function console.onInfoMessage(i32, i32) -> ()
   function gameSaving.readSaveGame(i32, i32) -> (i32)
   function gameSaving.sizeOfSaveGame(i32) -> (i32)
   function gameSaving.writeSaveGame(i32, i32, i32) -> (i32)
-  function loading.getWadsSizes(i32, i32) -> ()
   function loading.onGameInit(i32, i32) -> ()
-  function loading.readDataForAllWads(i32, i32) -> ()
-  function runtimeControl.getTicksMs() -> (i64)
+  function loading.readWads(i32, i32) -> ()
+  function loading.wadSizes(i32, i32) -> ()
+  function runtimeControl.timeInMilliseconds() -> (i64)
   function ui.drawFrame(i32) -> ()
 
 exports:
