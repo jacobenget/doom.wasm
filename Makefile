@@ -107,15 +107,15 @@ $(OUTPUT_DIR_WASM_SPECIFIC)/%.o:	src/%.c
 		${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $@; \
 	fi
 
-$(OUTPUT_DIR)/wasi_snapshot_preview1-trampolines.wasm: src/wasi_snapshot_preview1-trampolines.wat $(WASM_AS)
+$(OUTPUT_DIR)/wasi_snapshot_preview1-trampolines.wasm: src/wat/wasi_snapshot_preview1-trampolines.wat $(WASM_AS)
 	@echo [Compiling the module that has wasi-snapshot-preview1 trampolines]
 	$(VB)$(WASM_AS) $< -o $@
 
-$(OUTPUT_DIR)/merge-two-initialization-functions-into-one.wasm: src/merge-two-initialization-functions-into-one.wat $(WASM_AS)
+$(OUTPUT_DIR)/merge-two-initialization-functions-into-one.wasm: src/wat/merge-two-initialization-functions-into-one.wat $(WASM_AS)
 	@echo [Compiling the module that combines two init functions into one]
 	$(VB)$(WASM_AS) $< -o $@
 
-$(OUTPUT_DIR)/global_constants.wasm: src/global_constants.wat $(WASM_AS)
+$(OUTPUT_DIR)/global-constants.wasm: src/wat/global-constants.wat $(WASM_AS)
 	@echo [Compiling the module that defines some global constants]
 	$(VB)$(WASM_AS) $< -o $@
 
@@ -153,7 +153,7 @@ $(OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS): $(OUTPUT_INTERMEDIATE_WITH_INIT_FUN
 #				- Why? Clang/llvm toolchain does not currently support exporting global constants from C source code.
 #					So we provide useful global constants to our users by merging them into the module this way instead.
 OUTPUT_INTERMEDIATE_WITH_GLOBAL_CONSTANTS_ADDED = $(OUTPUT_DIR)/doom-with-global-constants-added.wasm
-$(OUTPUT_INTERMEDIATE_WITH_GLOBAL_CONSTANTS_ADDED): $(OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS) $(OUTPUT_DIR)/global_constants.wasm $(WASM_MERGE)
+$(OUTPUT_INTERMEDIATE_WITH_GLOBAL_CONSTANTS_ADDED): $(OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS) $(OUTPUT_DIR)/global-constants.wasm $(WASM_MERGE)
 	@echo [Augmenting the Doom WebAssembly module with some global constants]
 	$(VB)$(WASM_MERGE) $< doom $(word 2,$^) global-constants -o $@ $(BINARYEN_FLAGS)
 
