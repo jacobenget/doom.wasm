@@ -80,13 +80,13 @@ struct DB_BytesForAllWads DG_GetWads() {
 
   int numberOfWads = 0;
   size_t numberOfTotalBytesInAllWads = 0;
-  getWadsSizes(&numberOfWads, &numberOfTotalBytesInAllWads);
+  wadSizes(&numberOfWads, &numberOfTotalBytesInAllWads);
 
   if (numberOfWads > 0) {
     unsigned char *wadData = malloc(numberOfTotalBytesInAllWads);
     int byteLengthOfEachWad[numberOfWads];
     memset(byteLengthOfEachWad, 0, sizeof(byteLengthOfEachWad));
-    readDataForAllWads(wadData, byteLengthOfEachWad);
+    readWads(wadData, byteLengthOfEachWad);
 
     unsigned char *dataForNextWad = wadData;
 
@@ -167,7 +167,7 @@ void DG_SleepMs(uint32_t ms) {
   }
 }
 
-uint64_t DG_GetTicksMs() { return getTicksMs(); }
+uint64_t DG_GetTicksMs() { return timeInMilliseconds(); }
 
 //
 // Features related to the reading and writing of saved games

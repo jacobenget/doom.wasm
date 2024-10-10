@@ -37,17 +37,17 @@ EXPORT void reportKeyUp(int32_t doomKey);
 
 IMPORT_MODULE("loading") void onGameInit(int32_t width, int32_t height);
 IMPORT_MODULE("loading")
-void getWadsSizes(int32_t *numberOfWads, size_t *numberOfTotalBytesInAllWads);
+void wadSizes(int32_t *numberOfWads, size_t *numberOfTotalBytesInAllWads);
 IMPORT_MODULE("loading")
-void readDataForAllWads(uint8_t *wadDataDestination,
-                        int32_t *byteLengthOfEachWad);
+void readWads(uint8_t *wadDataDestination, int32_t *byteLengthOfEachWad);
 
 IMPORT_MODULE("ui") void drawFrame(uint32_t *screenBuffer);
 
-IMPORT_MODULE("console") void info(const char *message, size_t length);
-IMPORT_MODULE("console") void error(const char *message, size_t length);
+IMPORT_MODULE("console") void onInfoMessage(const char *message, size_t length);
+IMPORT_MODULE("console")
+void onErrorMessage(const char *message, size_t length);
 
-IMPORT_MODULE("runtimeControl") uint64_t getTicksMs();
+IMPORT_MODULE("runtimeControl") uint64_t timeInMilliseconds();
 
 // Return the size of the associated save game data, 0 in the case that no save
 // data exists for this slot
