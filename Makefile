@@ -82,7 +82,7 @@ $(OBJS_WASM_SPECIFIC): | $(OUTPUT_DIR_WASM_SPECIFIC)
 OUTPUT_DIRS = $(OUTPUT_DIR) $(OUTPUT_DIR_WASM_SPECIFIC)
 
 $(OUTPUT_DIRS):
-	@echo [Creating output folder '$@']
+	@echo [Creating output folder \'$@\']
 	$(VB)mkdir -p $@
 
 # Produce object files by compiling the related source file, but make sure that compiling happens via the WASI SDK.
