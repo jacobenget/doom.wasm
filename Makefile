@@ -329,6 +329,41 @@ $(BINARYEN_UTILS): ${BINARYEN_DIR}/bin/%: ${BINARYEN_DIR}
 	@echo [Building the Binaryen util '$*']
 	${VB}$(MAKE) --directory=$< $*
 
+
+####################################################################
+# Targets for building and running examples
+####################################################################
+
+# Each directory in "examples/" is expected to represent an example of
+# how to make use of the Doom WebAssemly modulue.
+#
+# Such an 'example' should contain a Makefile in its directory that is
+# allowed to depend upon the environment varaible ABSOLUTE_PATH_TO_DOOM_WASM
+# being set to point to the Doom WebAssembly module (and an example will
+# leverage ABSOLUTE_PATH_TO_DOOM_WASM in order to read to Doom WebAssembly
+# module). In return this Makefile must provide the two targets `build`
+# and `run`.
+
+# Here we provide two targets per example that make it easy to either `build` or
+# `run` that example via this Makefile:
+#
+#    run-example_$(example_name)
+#    build-example_$(example_name)
+
+EXAMPLES_DIR = examples
+EXAMPLES = $(subst /,,$(subst $(EXAMPLES_DIR)/,,$(wildcard $(EXAMPLES_DIR)/*/)) )
+EXAMPLES_RUN = $(addprefix run-example_, $(EXAMPLES))
+EXAMPLES_BUILD = $(addprefix build-example_, $(EXAMPLES))
+
+$(EXAMPLES_RUN): run-example_%: $(OUTPUT)
+	@echo [Running the example \'$*\']
+	${VB}$(MAKE) --directory=examples/$* run ABSOLUTE_PATH_TO_DOOM_WASM=$(abspath $(OUTPUT))
+
+$(EXAMPLES_BUILD): build-example_%: $(OUTPUT)
+	@echo [Building the example \'$*\']
+	${VB}$(MAKE) --directory=examples/$* build ABSOLUTE_PATH_TO_DOOM_WASM=$(abspath $(OUTPUT))
+
+
 ##########################################################
 # Targets for manually running pre-commit tests
 ##########################################################
