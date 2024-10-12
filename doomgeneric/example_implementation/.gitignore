@@ -1,2 +1,3 @@
-.SDL/
-.SDL_mixer/
+/build/
+/.SDL/
+/.SDL_mixer/
