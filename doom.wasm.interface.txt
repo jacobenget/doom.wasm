@@ -1,0 +1,40 @@
+##############################################################################
+#
+# Below lies the interface to the WebAssembly module located at 'build/doom.wasm'
+#
+# WARNING: This file was auto-generated, likely by calling something similar to 'make doom.wasm.interface.txt'.
+# Any manual edits made to this file will probably be clobbered!
+#
+##############################################################################
+
+imports:
+  function env.DG_DrawFrame()
+  function env.DG_GetKey(i32, i32)
+  function env.DG_GetTicksMs()
+  function env.DG_Init()
+  function env.DG_SetWindowTitle(i32)
+  function env.DG_SleepMs(i32)
+  function env.W_ParseCommandLine()
+  function env.system(i32)
+  function wasi_snapshot_preview1.args_get(i32, i32)
+  function wasi_snapshot_preview1.args_sizes_get(i32, i32)
+  function wasi_snapshot_preview1.fd_close(i32)
+  function wasi_snapshot_preview1.fd_fdstat_get(i32, i32)
+  function wasi_snapshot_preview1.fd_fdstat_set_flags(i32, i32)
+  function wasi_snapshot_preview1.fd_prestat_dir_name(i32, i32, i32)
+  function wasi_snapshot_preview1.fd_prestat_get(i32, i32)
+  function wasi_snapshot_preview1.fd_read(i32, i32, i32, i32)
+  function wasi_snapshot_preview1.fd_seek(i32, i64, i32, i32)
+  function wasi_snapshot_preview1.fd_write(i32, i32, i32, i32)
+  function wasi_snapshot_preview1.path_create_directory(i32, i32, i32)
+  function wasi_snapshot_preview1.path_open(i32, i32, i32, i32, i32, i64, i64, i32, i32)
+  function wasi_snapshot_preview1.path_remove_directory(i32, i32, i32)
+  function wasi_snapshot_preview1.path_rename(i32, i32, i32, i32, i32, i32)
+  function wasi_snapshot_preview1.path_unlink_file(i32, i32, i32)
+  function wasi_snapshot_preview1.proc_exit(i32)
+
+exports:
+  function _start()
+  function initGame(i32, i32)
+  function tickGame()
+  memory memory(min = 8, max = ∞)

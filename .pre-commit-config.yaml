@@ -15,9 +15,15 @@ repos:
         types_or: [c++, c]
 -   repo: local
     hooks:
-    -   id: generate-dev_requirements.txt
-        name: Generate dev_requirements.txt
-        entry: make generate-dev-requirements
+    -   id: generate-python_dev_requirements.txt
+        name: Generate python_dev_requirements.txt
+        entry: make generate-python-dev-requirements
+        language: system
+        pass_filenames: false
+        always_run: true
+    -   id: doom-wasm-interface-doc
+        name: Generate doom.wasm.interface.txt
+        entry: make doom.wasm.interface.txt
         language: system
         pass_filenames: false
         always_run: true
