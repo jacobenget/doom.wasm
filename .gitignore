@@ -1,2 +1,3 @@
 # Ignore the contents of any directory named 'build'
 **/build/
+.dev_virtualenv/

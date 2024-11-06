@@ -1,0 +1,24 @@
+##################################################################################################
+#
+# This file is used to manage which Python modules are installed in the virtual environment that lives at .dev_virtualenv/
+#
+# WARNING: This file was auto-generated, likely by calling something similar to 'make generate-dev-requirements'.
+# Any manual edits made to this file will probably be clobbered!
+#
+# If you wish to change which Python modules are installed in the virtual environment at .dev_virtualenv/
+# you should, instead, just manually install/uninstall modules in that virtual environment as you see fit
+# (see here if you're unsure of how to interact with Python virtual environment: https://docs.python.org/3/tutorial/venv.html)
+# and then manually run 'make generate-dev-requirements'.
+#
+##################################################################################################
+
+cfgv==3.4.0
+clang-format==14.0.3
+distlib==0.3.8
+filelock==3.15.4
+identify==2.6.0
+nodeenv==1.9.1
+platformdirs==4.2.2
+pre-commit==3.8.0
+PyYAML==6.0.2
+virtualenv==20.26.3

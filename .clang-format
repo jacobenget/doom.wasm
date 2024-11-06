@@ -1,0 +1,7 @@
+---
+BasedOnStyle: LLVM
+# Some header files are not self-sufficient (i.e. they don't include all other headers they depend upon)
+# so the current order of the header includes matters, and so we can't have clang-format change the order
+# of includes and still expect the code to compile.
+SortIncludes: false
+...

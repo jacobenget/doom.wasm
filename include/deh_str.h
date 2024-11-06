@@ -32,7 +32,6 @@ void DEH_fprintf(FILE *fstream, char *fmt, ...);
 void DEH_snprintf(char *buffer, size_t len, char *fmt, ...);
 void DEH_AddStringReplacement(char *from_text, char *to_text);
 
-
 #else
 
 #define DEH_String(x) (x)
@@ -44,4 +43,3 @@ void DEH_AddStringReplacement(char *from_text, char *to_text);
 #endif
 
 #endif /* #ifndef DEH_STR_H */
-
