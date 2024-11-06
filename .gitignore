@@ -1,8 +1,2 @@
-*.o
-*.obj
-*.DS_Store
-*.log
-*.user
-.vs/
-Debug/
-Release/
+# Ignore the contents of any directory named 'build'
+**/build/
