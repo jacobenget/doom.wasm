@@ -1,0 +1,29 @@
+##################################################################################################
+#
+# This file is used to manage which Python modules are installed in the virtual environment that lives at /
+#
+# WARNING: This file was auto-generated, likely by calling something similar to 'make generate-python-dev-requirements'.
+# Any manual edits made to this file will probably be clobbered!
+#
+# If you wish to change which Python modules are installed in the virtual environment at /
+# you should, instead, just manually install/uninstall modules in that virtual environment as you see fit
+# (see here if you're unsure of how to interact with Python virtual environment: https://docs.python.org/3/tutorial/venv.html)
+# and then manually run 'make generate-python-dev-requirements'.
+#
+##################################################################################################
+
+certifi==2024.8.30
+charset-normalizer==3.4.0
+cmake==3.30.4
+colorama==0.4.6
+conan==2.8.0
+fasteners==0.19
+idna==3.10
+Jinja2==3.1.4
+MarkupSafe==3.0.1
+patch-ng==1.18.0
+python-dateutil==2.9.0.post0
+PyYAML==6.0.2
+requests==2.32.3
+six==1.16.0
+urllib3==1.26.20
