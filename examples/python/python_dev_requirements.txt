@@ -1,0 +1,19 @@
+##################################################################################################
+#
+# This file is used to manage which Python modules are installed in the virtual environment that lives at /
+#
+# WARNING: This file was auto-generated, likely by calling something similar to 'make generate-python-dev-requirements'.
+# Any manual edits made to this file will probably be clobbered!
+#
+# If you wish to change which Python modules are installed in the virtual environment at /
+# you should, instead, just manually install/uninstall modules in that virtual environment as you see fit
+# (see here if you're unsure of how to interact with Python virtual environment: https://docs.python.org/3/tutorial/venv.html)
+# and then manually run 'make generate-python-dev-requirements'.
+#
+##################################################################################################
+
+einops==0.8.0
+importlib_resources==6.4.5
+numpy==2.1.3
+pygame==2.6.1
+wasmtime==25.0.0
