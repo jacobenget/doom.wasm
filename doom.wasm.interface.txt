@@ -8,16 +8,12 @@
 ##############################################################################
 
 imports:
-  function env.DG_DrawFrame()
-  function env.DG_GetKey(i32, i32)
-  function env.DG_GetTicksMs()
-  function env.DG_Init()
-  function env.DG_SetWindowTitle(i32)
-  function env.DG_SleepMs(i32)
   function env.W_ParseCommandLine()
-  function env.system(i32)
-  function wasi_snapshot_preview1.args_get(i32, i32)
-  function wasi_snapshot_preview1.args_sizes_get(i32, i32)
+  function runtimeControl.getTicksMs()
+  function runtimeControl.sleepMs(i32)
+  function ui.drawFrame(i32)
+  function ui.onGameInit(i32, i32)
+  function ui.setWindowTitle(i32)
   function wasi_snapshot_preview1.fd_close(i32)
   function wasi_snapshot_preview1.fd_fdstat_get(i32, i32)
   function wasi_snapshot_preview1.fd_fdstat_set_flags(i32, i32)
@@ -34,7 +30,9 @@ imports:
   function wasi_snapshot_preview1.proc_exit(i32)
 
 exports:
-  function _start()
-  function initGame(i32, i32)
+  function _initialize()
+  function initGame()
+  function reportKeyDown(i32)
+  function reportKeyUp(i32)
   function tickGame()
   memory memory(min = 8, max = ∞)

@@ -19,9 +19,13 @@ CFLAGS += --target=wasm32-unknown-wasi -Wall -g -Os
 # Details on a few of the linker flags used:
 #
 #   -Wl,  <-- needed to pass the immediately following option directly to the linker,
-#   --export-dynamic  <-- have linker export all non-hidden symbols, see https://lld.llvm.org/WebAssembly.html#cmdoption-export-dynamic
-#   --import-undefined  <-- produce a WebAssembly import for any undefined symbols, where possible, see https://lld.llvm.org/WebAssembly.html#cmdoption-import-undefined
-LDFLAGS += -Wl,--export-dynamic -Wl,--import-undefined
+#   --export-dynamic  <-- have linker export all non-hidden symbols
+#       see https://lld.llvm.org/WebAssembly.html#cmdoption-export-dynamic
+#   --import-undefined  <-- produce a WebAssembly import for any undefined symbols, where possible
+#       see https://lld.llvm.org/WebAssembly.html#cmdoption-import-undefined
+#   -mexec-model=reactor  <-- says "this isn't a command/program with a 'main' function that drives its execution, instead this is a library with a lifetime controlled by the user",
+#       see https://clang.llvm.org/docs/ClangCommandLineReference.html#cmdoption-clang-mexec-model
+LDFLAGS += -Wl,--export-dynamic -Wl,--import-undefined -mexec-model=reactor
 LIBS += -lm -lc
 
 OUTPUT_DIR = build
