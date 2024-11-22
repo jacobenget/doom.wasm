@@ -16,6 +16,7 @@ Include `doomgeneric.h` into your source file and just implement these functions
 * DG_OpenSaveGameReader
 * DG_OpenSaveGameWriter
 * DG_DemoRecorded
+* DG_PCXScreenshotTaken
 
 |Functions            |Description|
 |---------------------|-----------|
@@ -29,6 +30,7 @@ Include `doomgeneric.h` into your source file and just implement these functions
 |DG_OpenSaveGameReader|Provide an interface to read the save game data from a specific save slot, return NULL if no save data exists in this slot.
 |DG_OpenSaveGameWriter|Provide an interface to write save game data to a specific save slot.
 |DG_DemoRecorded      |Respond to the user having recording a demo.
+|DG_PCXScreenshotTaken|Respond to the user having taken a screenshot.
 
 ### main loop
 At start, call `doomgeneric_Create()`.
