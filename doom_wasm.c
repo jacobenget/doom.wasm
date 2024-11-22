@@ -2,6 +2,7 @@
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 
 /*
  * This file provides augmentations to the interface (i.e. imports and exports)
@@ -23,6 +24,17 @@ __attribute__((import_module("loading"))) void
 getWadsSizes(int *numberOfWads, size_t *numberOfTotalBytesInAllWads);
 __attribute__((import_module("loading"))) void
 readDataForAllWads(unsigned char *wadDataDestination, int *byteLengthOfEachWad);
+
+// Return the size of the associated save game data, 0 in the case that no save
+// data exists for this slot
+__attribute__((import_module("gameSaving"))) size_t
+sizeOfSaveGame(int gameSaveId);
+// Return the number of bytes read
+__attribute__((import_module("gameSaving"))) size_t
+readSaveGame(int gameSaveId, unsigned char *dataDestination);
+// Return the number of bytes written
+__attribute__((import_module("gameSaving"))) size_t
+writeSaveGame(int gameSaveId, unsigned char *data, size_t length);
 
 // *****************************************************************************
 // *                             EXPORTED FUNCTIONS                            *
@@ -114,6 +126,168 @@ void DG_SetWindowTitle(const char *title) { setWindowTitle(title); }
 void DG_SleepMs(uint32_t ms) { sleepMs(ms); }
 
 uint32_t DG_GetTicksMs() { return getTicksMs(); }
+
+//
+// Features related to the reading and writing of saved games
+//
+
+typedef struct {
+  save_game_reader_t reader;
+  unsigned char *buffer;
+  size_t length;
+  size_t offset;
+} buffer_save_game_reader_t;
+
+typedef struct {
+  save_game_writer_t writer;
+  unsigned char *buffer;
+  size_t length;
+  size_t offset;
+  int saveGameSlot;
+} buffer_save_game_writer_t;
+
+//
+// Implement the functions that make up save_game_reader_t for when the data is
+// being read directly from a buffer.
+//
+
+static size_t SaveGameReader_ReadBytes(struct save_game_reader *reader,
+                                       unsigned char *destination,
+                                       size_t numberOfBytes) {
+  buffer_save_game_reader_t *bufferReader = (buffer_save_game_reader_t *)reader;
+  memcpy(destination, bufferReader->buffer + bufferReader->offset,
+         numberOfBytes);
+  bufferReader->offset += numberOfBytes;
+  return numberOfBytes;
+}
+
+static long SaveGameReader_BytesReadSoFar(struct save_game_reader *reader) {
+  buffer_save_game_reader_t *bufferReader = (buffer_save_game_reader_t *)reader;
+  return bufferReader->offset;
+}
+
+static int SaveGameReader_Close(struct save_game_reader *reader) {
+  buffer_save_game_reader_t *bufferReader = (buffer_save_game_reader_t *)reader;
+  free(bufferReader->buffer);
+  free(bufferReader);
+  return 0;
+}
+
+//
+// Implement the functions that make up save_game_writer_t for when the data is
+// being read directly from a buffer.
+//
+
+static size_t SaveGameWriter_WriteBytes(struct save_game_writer *writer,
+                                        unsigned char *source,
+                                        size_t numberOfBytes) {
+  buffer_save_game_writer_t *bufferWriter = (buffer_save_game_writer_t *)writer;
+
+  // If the current buffer isn't big enough to hold the data we wish to write,
+  // increase the buffer size so it's big enough
+  size_t lengthNeeded = bufferWriter->offset + numberOfBytes;
+  if (lengthNeeded > bufferWriter->length) {
+    size_t newLength =
+        (bufferWriter->length * 3) / 2; // increase buffer size by 50%
+    if (lengthNeeded > newLength) {
+      newLength = lengthNeeded;
+    }
+
+    unsigned char *biggerBuffer = malloc(newLength);
+    if (!biggerBuffer) {
+      return 0;
+    }
+    memcpy(biggerBuffer, bufferWriter->buffer, bufferWriter->offset);
+    free(bufferWriter->buffer);
+    bufferWriter->buffer = biggerBuffer;
+    bufferWriter->length = newLength;
+  }
+
+  memcpy(bufferWriter->buffer + bufferWriter->offset, source, numberOfBytes);
+  bufferWriter->offset += numberOfBytes;
+
+  return numberOfBytes;
+}
+
+static long SaveGameWriter_BytesWrittenSoFar(struct save_game_writer *writer) {
+  buffer_save_game_writer_t *bufferWriter = (buffer_save_game_writer_t *)writer;
+  return bufferWriter->offset;
+}
+
+static int SaveGameWriter_Close(struct save_game_writer *writer) {
+
+  buffer_save_game_writer_t *bufferWriter = (buffer_save_game_writer_t *)writer;
+
+  size_t sizeWritten = writeSaveGame(
+      bufferWriter->saveGameSlot, bufferWriter->buffer, bufferWriter->length);
+
+  if (bufferWriter->buffer) {
+    free(bufferWriter->buffer);
+  }
+  free(bufferWriter);
+
+  if (sizeWritten != bufferWriter->length) {
+    return EOF;
+  } else {
+    return 0;
+  }
+}
+
+// Return NULL if there is no save game data saved to this slot
+save_game_reader_t *DG_OpenSaveGameReader(int saveGameSlot) {
+  size_t saveGameSize = sizeOfSaveGame(saveGameSlot);
+
+  if (!saveGameSize) {
+    return NULL;
+  }
+
+  unsigned char *buffer = malloc(saveGameSize);
+
+  if (!buffer) {
+    return NULL;
+  }
+
+  size_t bytesRead = readSaveGame(saveGameSlot, buffer);
+
+  if (bytesRead != saveGameSize) {
+    free(buffer);
+    return NULL;
+  }
+
+  buffer_save_game_reader_t *bufferReader =
+      malloc(sizeof(buffer_save_game_reader_t));
+  bufferReader->reader.ReadBytes = SaveGameReader_ReadBytes;
+  bufferReader->reader.BytesReadSoFar = SaveGameReader_BytesReadSoFar;
+  bufferReader->reader.Close = SaveGameReader_Close;
+  bufferReader->buffer = buffer;
+  bufferReader->length = saveGameSize;
+  bufferReader->offset = 0;
+
+  return &bufferReader->reader;
+}
+
+save_game_writer_t *DG_OpenSaveGameWriter(int saveGameSlot) {
+  // A few save game file examples that were tested were around 25k bytes,
+  // so we'll start with an initial buffer size just a bit more than that.
+  const size_t initialSaveGameBufferSize = 30000;
+  unsigned char *buffer = malloc(initialSaveGameBufferSize);
+
+  if (!buffer) {
+    return NULL;
+  }
+
+  buffer_save_game_writer_t *bufferWriter =
+      malloc(sizeof(buffer_save_game_writer_t));
+  bufferWriter->writer.WriteBytes = SaveGameWriter_WriteBytes;
+  bufferWriter->writer.BytesWrittenSoFar = SaveGameWriter_BytesWrittenSoFar;
+  bufferWriter->writer.Close = SaveGameWriter_Close;
+  bufferWriter->buffer = buffer;
+  bufferWriter->length = initialSaveGameBufferSize;
+  bufferWriter->offset = 0;
+  bufferWriter->saveGameSlot = saveGameSlot;
+
+  return &bufferWriter->writer;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Here we implement, via the doomgeneric interface, the WebAssembly exported

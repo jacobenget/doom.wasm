@@ -8,6 +8,9 @@
 ##############################################################################
 
 imports:
+  function gameSaving.readSaveGame(i32, i32)
+  function gameSaving.sizeOfSaveGame(i32)
+  function gameSaving.writeSaveGame(i32, i32, i32)
   function loading.getWadsSizes(i32, i32)
   function loading.readDataForAllWads(i32, i32)
   function runtimeControl.getTicksMs()
@@ -25,9 +28,6 @@ imports:
   function wasi_snapshot_preview1.fd_write(i32, i32, i32, i32)
   function wasi_snapshot_preview1.path_create_directory(i32, i32, i32)
   function wasi_snapshot_preview1.path_open(i32, i32, i32, i32, i32, i64, i64, i32, i32)
-  function wasi_snapshot_preview1.path_remove_directory(i32, i32, i32)
-  function wasi_snapshot_preview1.path_rename(i32, i32, i32, i32, i32, i32)
-  function wasi_snapshot_preview1.path_unlink_file(i32, i32, i32)
   function wasi_snapshot_preview1.proc_exit(i32)
 
 exports:

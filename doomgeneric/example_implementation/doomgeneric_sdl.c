@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 #include <stdbool.h>
 #include <SDL.h>
@@ -262,6 +263,120 @@ struct DB_BytesForAllWads DG_GetWads() {
 void DG_SetWindowTitle(const char *title) {
   if (window != NULL) {
     SDL_SetWindowTitle(window, title);
+  }
+}
+
+typedef struct {
+  save_game_reader_t reader;
+  FILE *handle;
+} file_save_game_reader_t;
+
+typedef struct {
+  save_game_writer_t writer;
+  FILE *handle;
+} file_save_game_writer_t;
+
+static size_t SaveGameReader_ReadBytes(struct save_game_reader *reader,
+                                       unsigned char *destination,
+                                       size_t numberOfBytes) {
+  file_save_game_reader_t *fileReader = (file_save_game_reader_t *)reader;
+  return fread(destination, 1, numberOfBytes, fileReader->handle);
+}
+
+static long SaveGameReader_BytesReadSoFar(struct save_game_reader *reader) {
+  file_save_game_reader_t *fileReader = (file_save_game_reader_t *)reader;
+  return ftell(fileReader->handle);
+}
+
+static int SaveGameReader_Close(struct save_game_reader *reader) {
+  file_save_game_reader_t *fileReader = (file_save_game_reader_t *)reader;
+  int result = fclose(fileReader->handle);
+  free(fileReader);
+  return result;
+}
+
+static size_t SaveGameWriter_WriteBytes(struct save_game_writer *writer,
+                                        unsigned char *source,
+                                        size_t numberOfBytes) {
+  file_save_game_writer_t *fileWriter = (file_save_game_writer_t *)writer;
+  return fwrite(source, 1, numberOfBytes, fileWriter->handle);
+}
+
+static long SaveGameWriter_BytesWrittenSoFar(struct save_game_writer *writer) {
+  file_save_game_writer_t *fileWriter = (file_save_game_writer_t *)writer;
+  return ftell(fileWriter->handle);
+}
+
+static int SaveGameWriter_Close(struct save_game_writer *writer) {
+
+  file_save_game_writer_t *fileWriter = (file_save_game_writer_t *)writer;
+
+  // TODO: leverage writing to a temporary file and then renaming it at the end
+  // if it was successfully written. This would prevent an existing savegame
+  // from being overwritten by a corrupted one, or if a savegame buffer overrun
+  // occurs.
+
+  int result = fclose(fileWriter->handle);
+  free(fileWriter);
+  return result;
+}
+
+#define SAVE_GAME_FOLDER "./.savegame/"
+#define SAVE_GAME_FILE_PATH_FORMAT_STRING SAVE_GAME_FOLDER "doomsav%d.dsg"
+#define PATH_TO_SAVE_GAME_FILE_MAX_LENGTH                                      \
+  (sizeof(SAVE_GAME_FILE_PATH_FORMAT_STRING) +                                 \
+   20) // + 20 to provide space for the formatted int that's inserted
+
+// If pathToSaveGameFile has at least PATH_TO_SAVE_GAME_FILE_MAX_LENGTH space
+// then this will succeed
+static void getPathToSaveGameFile(char pathToSaveGameFile[], int saveGameSlot) {
+  // Copy into 'pathToSaveGameFile' a file path string like
+  // "./.savegame/doomsav0.dsg"
+  snprintf(pathToSaveGameFile, PATH_TO_SAVE_GAME_FILE_MAX_LENGTH,
+           SAVE_GAME_FILE_PATH_FORMAT_STRING, saveGameSlot);
+}
+
+// Return NULL if there is no save game data saved to this slot
+save_game_reader_t *DG_OpenSaveGameReader(int saveGameSlot) {
+
+  // Open the save game file associated with this slot
+  char pathToSaveGameFile[PATH_TO_SAVE_GAME_FILE_MAX_LENGTH];
+  getPathToSaveGameFile(pathToSaveGameFile, saveGameSlot);
+  FILE *handle = fopen(pathToSaveGameFile, "rb");
+
+  if (handle) {
+    file_save_game_reader_t *fileReader =
+        malloc(sizeof(file_save_game_reader_t));
+    fileReader->reader.ReadBytes = SaveGameReader_ReadBytes;
+    fileReader->reader.BytesReadSoFar = SaveGameReader_BytesReadSoFar;
+    fileReader->reader.Close = SaveGameReader_Close;
+    fileReader->handle = handle;
+
+    return &fileReader->reader;
+  } else {
+    return NULL;
+  }
+}
+
+save_game_writer_t *DG_OpenSaveGameWriter(int saveGameSlot) {
+  // Open the save game file associated with this slot
+  char pathToSaveGameFile[PATH_TO_SAVE_GAME_FILE_MAX_LENGTH];
+  getPathToSaveGameFile(pathToSaveGameFile, saveGameSlot);
+  // Make sure the folder for saving games exists
+  mkdir(SAVE_GAME_FOLDER, 0755);
+  FILE *handle = fopen(pathToSaveGameFile, "wb");
+
+  if (handle) {
+    file_save_game_writer_t *fileWriter =
+        malloc(sizeof(file_save_game_writer_t));
+    fileWriter->writer.WriteBytes = SaveGameWriter_WriteBytes;
+    fileWriter->writer.BytesWrittenSoFar = SaveGameWriter_BytesWrittenSoFar;
+    fileWriter->writer.Close = SaveGameWriter_Close;
+    fileWriter->handle = handle;
+
+    return &fileWriter->writer;
+  } else {
+    return NULL;
   }
 }
 
