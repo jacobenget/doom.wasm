@@ -3,6 +3,7 @@
 #include "doomkeys.h"
 #include "m_argv.h"
 #include "doomgeneric.h"
+#include "file_misc.h"
 
 #include <stdio.h>
 #include <unistd.h>
@@ -55,6 +56,9 @@ static unsigned char convertToDoomKey(unsigned int key) {
   case SDLK_LALT:
   case SDLK_RALT:
     key = KEY_LALT;
+    break;
+  case SDLK_F1:
+    key = KEY_F1;
     break;
   case SDLK_F2:
     key = KEY_F2;
@@ -180,23 +184,6 @@ int DG_GetKey(int *pressed, unsigned char *doomKey) {
   return 0;
 }
 
-//
-// Determine the length of an open file.
-//
-static long M_FileLength(FILE *handle) {
-  // save the current position in the file
-  long savedpos = ftell(handle);
-
-  // jump to the end and find the length
-  fseek(handle, 0, SEEK_END);
-  long length = ftell(handle);
-
-  // go back to the old location
-  fseek(handle, savedpos, SEEK_SET);
-
-  return length;
-}
-
 // These values are initialized upon startup
 char *pathToIWad;
 char **pathsToPWads;
@@ -211,7 +198,7 @@ static struct DG_WadFileBytes readWadFile(const char *pathToWadFile) {
 
   FILE *handle = fopen(pathToWadFile, "rb");
   if (handle != NULL) {
-    long fileLength = M_FileLength(handle);
+    long fileLength = FileLength(handle);
     unsigned char *wadData = malloc(fileLength);
     if (wadData != NULL) {
       size_t count = fread(wadData, 1, fileLength, handle);
@@ -377,6 +364,58 @@ save_game_writer_t *DG_OpenSaveGameWriter(int saveGameSlot) {
     return &fileWriter->writer;
   } else {
     return NULL;
+  }
+}
+
+void DG_DemoRecorded(const char *demoName, unsigned char *demoBytes,
+                     size_t demoSize) {
+  FILE *handle = fopen(demoName, "wb");
+  if (handle) {
+    fwrite(demoBytes, 1, demoSize, handle);
+    fclose(handle);
+    printf("Demo recorded: %s, size: %zu\n", demoName, demoSize);
+  }
+}
+
+void DG_PCXScreenshotTaken(unsigned char *screenshotBytes,
+                           size_t screenshotSize) {
+  const char *screenshotFileNameFormat = "DOOM%02i.pcx";
+  const int maxScreenShotId = 99;
+
+  // When the screenshot id (2 characters) replaces the related format specifier
+  // (4 characters) in the file name format string the resultant string is no
+  // longer than this.
+  size_t maxFileNameLength = strlen(screenshotFileNameFormat);
+  size_t bufferLengthNeeded = maxFileNameLength + 1; // +1 for null terminator
+  char fileName[bufferLengthNeeded];
+
+  // Find an unused screenshot file name, by iterating through all possible ids
+  int i = 0;
+  while (i <= maxScreenShotId) {
+    snprintf(fileName, bufferLengthNeeded, screenshotFileNameFormat, i);
+
+    if (!FileExists(fileName)) {
+      break;
+    } else {
+      i++;
+    }
+  }
+
+  if (i > maxScreenShotId) {
+    fprintf(stderr,
+            "Screenshot: Couldn't save a PCX screenshot because %d screenshots "
+            "already exist on disk\n",
+            maxScreenShotId + 1);
+  } else {
+    FILE *handle = fopen(fileName, "wb");
+    if (handle) {
+      fwrite(screenshotBytes, 1, screenshotSize, handle);
+      fclose(handle);
+      printf("Screenshot saved: %s\n", fileName);
+    } else {
+      fprintf(stderr, "Screenshot: Couldn't open file for writing: %s\n",
+              fileName);
+    }
   }
 }
 

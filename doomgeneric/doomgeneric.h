@@ -61,5 +61,9 @@ void DG_SetWindowTitle(const char *title);
 // Return NULL if there is no save game data saved to the given slot
 save_game_reader_t *DG_OpenSaveGameReader(int saveGameSlot);
 save_game_writer_t *DG_OpenSaveGameWriter(int saveGameSlot);
+void DG_DemoRecorded(const char *demoName, unsigned char *demoBytes,
+                     size_t demoSize);
+void DG_PCXScreenshotTaken(unsigned char *screenshotBytes,
+                           size_t screenshotSize);
 
 #endif // DOOM_GENERIC

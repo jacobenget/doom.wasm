@@ -23,6 +23,7 @@
 
 #include "memio.h"
 #include "mus2mid.h"
+#include "file_misc.h"
 
 #define NUM_CHANNELS 16
 
@@ -617,7 +618,7 @@ int main(int argc, char *argv[]) {
 
   mem_get_buf(dst, &outfile, &outfile_len);
 
-  M_WriteFile(argv[2], outfile, outfile_len);
+  WriteFile(argv[2], outfile, outfile_len);
 
   return 0;
 }

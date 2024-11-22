@@ -768,7 +768,7 @@ void G_Ticker(void) {
       G_DoWorldDone();
       break;
     case ga_screenshot:
-      V_ScreenShot("DOOM%02i.%s");
+      V_ScreenShot();
       players[consoleplayer].message = DEH_String("screen shot");
       gameaction = ga_nothing;
       break;
@@ -1965,7 +1965,7 @@ boolean G_CheckDemoStatus(void) {
 
   if (demorecording) {
     *demo_p++ = DEMOMARKER;
-    M_WriteFile(demoname, demobuffer, demo_p - demobuffer);
+    DG_DemoRecorded(demoname, demobuffer, demo_p - demobuffer);
     Z_Free(demobuffer);
     demorecording = false;
     I_Error("Demo %s recorded", demoname);

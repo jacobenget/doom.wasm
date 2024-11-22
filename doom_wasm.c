@@ -289,6 +289,30 @@ save_game_writer_t *DG_OpenSaveGameWriter(int saveGameSlot) {
   return &bufferWriter->writer;
 }
 
+void DG_DemoRecorded(const char *demoName, unsigned char *demoBytes,
+                     size_t demoSize) {
+  // Do nothing for now in response to a demo being recorded, because we don't
+  // currently support trigging the recording of a demo via the WebAssembly, so
+  // we know this function should never be called.
+  //
+  // Recording a demo in Doom is entirely done by passing the "-record" command
+  // line argument to Doom, which we don't currently allow in this
+  // implementation (in fact, we don't allow the passing of ANY command line
+  // arguments to Doom).
+}
+
+void DG_PCXScreenshotTaken(unsigned char *screenshotBytes,
+                           size_t screenshotSize) {
+  // Do nothing for now in response to a screenshot being taken, because we
+  // don't currently support the triggering of a screenshot via the WebAssembly,
+  // so we know this function should never be called.
+  //
+  // Taking a screenshot in Doom can only be done in 'development mode', which
+  // is enabled via the  "-devparm" command line argument, which we don't
+  // currently allow in this implementation (in fact, we don't allow the passing
+  // of ANY command line arguments to Doom).
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Here we implement, via the doomgeneric interface, the WebAssembly exported
 // functions.
