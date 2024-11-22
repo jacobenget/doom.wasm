@@ -123,7 +123,7 @@ static void ExtendLumpInfo(int newnumlumps) {
 // Other files are single lumps with the base filename
 //  for the lump name.
 
-wad_file_t *W_AddFile(char *filename) {
+wad_file_t *W_AddFile(byte *wadData, size_t wadByteLength) {
   wadinfo_t header;
   lumpinfo_t *lump_p;
   unsigned int i;
@@ -136,16 +136,20 @@ wad_file_t *W_AddFile(char *filename) {
 
   // open the file and add to directory
 
-  wad_file = W_OpenFile(filename);
+  wad_file = W_OpenFile(wadData, wadByteLength);
 
   if (wad_file == NULL) {
-    printf(" couldn't open %s\n", filename);
+    printf(" couldn't open a WAD file\n");
     return NULL;
   }
 
   newnumlumps = numlumps;
 
-  if (strcasecmp(filename + strlen(filename) - 3, "wad")) {
+  // Temporarily remove support for loading a single lump file as a WAD file,
+  // because this feature is only used to manually play a game demos but will
+  // require a more complicated interface for loading WADs, and the investment
+  // in such a complicated interface doesn't feel worth it yet.
+  if (false) { // if (strcasecmp(filename + strlen(filename) - 3, "wad")) {
     // single lump file
 
     // fraggle: Swap the filepos and size here.  The WAD directory
@@ -153,15 +157,15 @@ wad_file_t *W_AddFile(char *filename) {
     // them back.  Effectively we're constructing a "fake WAD directory"
     // here, as it would appear on disk.
 
-    fileinfo = Z_Malloc(sizeof(filelump_t), PU_STATIC, 0);
-    fileinfo->filepos = LONG(0);
-    fileinfo->size = LONG(wad_file->length);
+    // fileinfo = Z_Malloc(sizeof(filelump_t), PU_STATIC, 0);
+    // fileinfo->filepos = LONG(0);
+    // fileinfo->size = LONG(wad_file->length);
 
     // Name the lump after the base of the filename (without the
     // extension).
 
-    M_ExtractFileBase(filename, fileinfo->name);
-    newnumlumps++;
+    // M_ExtractFileBase(filename, fileinfo->name);
+    // newnumlumps++;
   } else {
     // WAD file
     W_Read(wad_file, 0, &header, sizeof(header));
@@ -169,9 +173,7 @@ wad_file_t *W_AddFile(char *filename) {
     if (strncmp(header.identification, "IWAD", 4)) {
       // Homebrew levels?
       if (strncmp(header.identification, "PWAD", 4)) {
-        I_Error("Wad file %s doesn't have IWAD "
-                "or PWAD id\n",
-                filename);
+        I_Error("Wad file doesn't have IWAD or PWAD id\n");
       }
 
       // ???modifiedgame = true;

@@ -17,6 +17,7 @@
 //
 
 #include <stdio.h>
+#include <string.h>
 
 #include "config.h"
 
@@ -24,62 +25,21 @@
 #include "m_argv.h"
 
 #include "w_file.h"
+#include "m_misc.h"
+#include "z_zone.h"
 
-extern wad_file_class_t stdc_wad_file;
-
-/*
-#ifdef _WIN32
-extern wad_file_class_t win32_wad_file;
-#endif
-*/
-
-#ifdef HAVE_MMAP
-extern wad_file_class_t posix_wad_file;
-#endif
-
-static wad_file_class_t *wad_file_classes[] = {
-/*
-#ifdef _WIN32
-    &win32_wad_file,
-#endif
-*/
-#ifdef HAVE_MMAP
-    &posix_wad_file,
-#endif
-    &stdc_wad_file,
-};
-
-wad_file_t *W_OpenFile(char *path) {
-  wad_file_t *result;
-  int i;
-
-  //!
-  // Use the OS's virtual memory subsystem to map WAD files
-  // directly into memory.
-  //
-
-  if (!M_CheckParm("-mmap")) {
-    return stdc_wad_file.OpenFile(path);
-  }
-
-  // Try all classes in order until we find one that works
-
-  result = NULL;
-
-  for (i = 0; i < arrlen(wad_file_classes); ++i) {
-    result = wad_file_classes[i]->OpenFile(path);
-
-    if (result != NULL) {
-      break;
-    }
-  }
+wad_file_t *W_OpenFile(byte *wadData, size_t wadByteLength) {
+  wad_file_t *result = Z_Malloc(sizeof(wad_file_t), PU_STATIC, 0);
+  result->mapped = wadData;
+  result->length = wadByteLength;
 
   return result;
 }
 
-void W_CloseFile(wad_file_t *wad) { wad->file_class->CloseFile(wad); }
+void W_CloseFile(wad_file_t *wad) { Z_Free(wad); }
 
 size_t W_Read(wad_file_t *wad, unsigned int offset, void *buffer,
               size_t buffer_len) {
-  return wad->file_class->Read(wad, offset, buffer, buffer_len);
+  memcpy(buffer, wad->mapped + offset, buffer_len);
+  return buffer_len;
 }

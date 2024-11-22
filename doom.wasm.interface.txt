@@ -8,7 +8,8 @@
 ##############################################################################
 
 imports:
-  function env.W_ParseCommandLine()
+  function loading.getWadsSizes(i32, i32)
+  function loading.readDataForAllWads(i32, i32)
   function runtimeControl.getTicksMs()
   function runtimeControl.sleepMs(i32)
   function ui.drawFrame(i32)

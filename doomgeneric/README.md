@@ -7,6 +7,7 @@ To try it you will need a WAD file (game data). If you don't own the game, share
 # porting
 Include `doomgeneric.h` into your source file and just implement these functions to suit your platform.
 * DG_Init
+* DG_GetWads
 * DG_DrawFrame
 * DG_SleepMs
 * DG_GetTicksMs
@@ -16,6 +17,7 @@ Include `doomgeneric.h` into your source file and just implement these functions
 |Functions            |Description|
 |---------------------|-----------|
 |DG_Init              |Initialize your platfrom (create window, framebuffer, etc...).
+|DG_GetWads           |Provide all game data
 |DG_DrawFrame         |Frame is ready in DG_ScreenBuffer. Copy it to your platform's screen.
 |DG_SleepMs           |Sleep in milliseconds.
 |DG_GetTicksMs        |The ticks passed since launch in milliseconds.
