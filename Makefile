@@ -32,6 +32,7 @@ OUTPUT_DIR = build
 OUTPUT_DIR_WASM_SPECIFIC = $(OUTPUT_DIR)/wasm_specific
 OUTPUT_NAME = doom.wasm
 OUTPUT = $(OUTPUT_DIR)/$(OUTPUT_NAME)
+OUTPUT_INTERMEDIATE_WITH_WASI_IMPORTS = $(OUTPUT_DIR)/doom-with-unfilled-wasi-needs.wasm
 
 SRC_DOOM = dummy.o am_map.o doomdef.o doomstat.o dstrings.o d_event.o d_items.o d_iwad.o d_loop.o d_main.o d_mode.o d_net.o f_finale.o f_wipe.o g_game.o hu_lib.o hu_stuff.o info.o i_cdmus.o i_endoom.o i_joystick.o i_scale.o i_sound.o i_system.o i_timer.o memio.o m_argv.o m_bbox.o m_cheat.o m_config.o m_controls.o m_fixed.o m_menu.o m_misc.o m_random.o p_ceilng.o p_doors.o p_enemy.o p_floor.o p_inter.o p_lights.o p_map.o p_maputl.o p_mobj.o p_plats.o p_pspr.o p_saveg.o p_setup.o p_sight.o p_spec.o p_switch.o p_telept.o p_tick.o p_user.o r_bsp.o r_data.o r_draw.o r_main.o r_plane.o r_segs.o r_sky.o r_things.o sha1.o sounds.o statdump.o st_lib.o st_stuff.o s_sound.o tables.o v_video.o wi_stuff.o w_checksum.o w_file.o w_wad.o z_zone.o i_input.o i_video.o doomgeneric.o
 SRC_DOOM_WASM_SPECIFIC = doom_wasm.o
@@ -49,19 +50,23 @@ all: doom
 clean:
 	rm -rf $(OUTPUT_DIR)
 
-# Provide a target that builds the main artifact by immediately delegating to the WASI SDK docker image to build everything needed.
+# TARGET THAT ONLY EXISTS AS AN OPTIMIZATION
+#
+# THis is a target that builds the main artifact by immediately delegating to the WASI SDK docker image to compile all source code.
 # This target exists as a way to save time when the main artifact has to be built from scratch.
 # It saves time by not having to step into and out of a docker container each time one dependency of the main artifact has to be built.
-# One sampling of the time difference between this approach and the alternative `make $(OUTPUT)` showed a savings of around 30% (~2 mins vs. ~3 mins) when building from scratch
+# One sampling of the time difference between this approach and the alternative `make $(OUTPUT)` showed a savings of around 30% (~2 mins vs. ~3 mins) when building from scratch.
 doom:
-	@echo [Delegating to WASI SDK Docker image]
-	$(VB)${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $(OUTPUT)
+	@echo [Delegating to WASI SDK Docker image just once]
+	$(VB)${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $(OUTPUT_INTERMEDIATE_WITH_WASI_IMPORTS)
+	@echo [Stepping out of WASI SDK Docker image for final steps of building the main artifact]
+	$(VB)$(MAKE) $(MAKEFLAGS) $(OUTPUT)
 
 # Link all object files together to produce the needed artifact, but make sure that linking happens via the WASI SDK.
 # We do this by detecting when the literal phrase 'wasi' DOESN'T appear in the path to the compiler
 # (e.g. you're running locally and aren't configured to use a local WASI SDK installation)
 # and then rerunning this `make` target in a docker container based on the WASI SDK docker image.
-$(OUTPUT): $(OBJS) $(OBJS_WASM_SPECIFIC)
+$(OUTPUT_INTERMEDIATE_WITH_WASI_IMPORTS): $(OBJS) $(OBJS_WASM_SPECIFIC)
 	$(VB)if echo "$(CC)" | grep -q "wasi"; then \
 		echo [Linking $@]; \
 		$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(OBJS_WASM_SPECIFIC) -s -o $@ $(LIBS); \
@@ -104,6 +109,25 @@ $(OUTPUT_DIR_WASM_SPECIFIC)/%.o:	%.c
 		${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $@; \
 	fi
 
+$(OUTPUT_DIR)/wasi_snapshot_preview1-trampolines.wasm: wasi_snapshot_preview1-trampolines.wat $(WASM_AS)
+	@echo [Compiling the module that has wasi-snapshot-preview1 trampolines]
+	$(VB)$(WASM_AS) $< -o $@
+
+OUTPUT_INTERMEDIATE_WITH_SUPERFLUOUS_EXPORTS = $(OUTPUT_DIR)/doom-with-superfluous-exports.wasm
+
+BINARYEN_FLAGS = --enable-bulk-memory
+
+$(OUTPUT_INTERMEDIATE_WITH_SUPERFLUOUS_EXPORTS): $(OUTPUT_INTERMEDIATE_WITH_WASI_IMPORTS) $(OUTPUT_DIR)/wasi_snapshot_preview1-trampolines.wasm $(WASM_MERGE)
+	@echo [Merging the Doom WebAssembly module with wasi-snapshot-preview1 trampolines]
+	$(VB)$(WASM_MERGE) $< wasi-implementation $(word 2,$^) wasi_snapshot_preview1 -o $@ $(BINARYEN_FLAGS)
+
+# Note: the wasm-metadce tool is very chatty, unconditionally (as far as I can tell) outputing details
+# about the unused exports. To prevent this mostly useless output from being seen we redirect stdout to
+# /dev/null unless VERBOSE is set to something other than 0.
+$(OUTPUT): $(OUTPUT_INTERMEDIATE_WITH_SUPERFLUOUS_EXPORTS) reachability_graph_for_wasm-metadce.json $(WASM_METADCE)
+	@echo [Removing from Doom WebAssembly module all exports not listed as reachable in $(word 2,$^)]
+	$(VB)$(WASM_METADCE) $< --graph-file $(word 2,$^) -o $@ $(BINARYEN_FLAGS) $(if $(VERBOSE:0=),,> /dev/null)
+
 # Produce a text file that describes the imports and exports of the Doom WebAssembly module.
 $(OUTPUT_NAME).interface.txt: $(OUTPUT) utils/print-interface-of-wasm-module/
 	$(VB) > $@
@@ -119,9 +143,9 @@ $(OUTPUT_NAME).interface.txt: $(OUTPUT) utils/print-interface-of-wasm-module/
 	${VB}$(MAKE) --directory=utils/print-interface-of-wasm-module/ run PATH_TO_WASM_MODULE=$(abspath $(OUTPUT)) >> $@
 
 
-##########################################################
-# Targets for managing the local dev environments
-##########################################################
+####################################################################
+# Targets for managing the local dev environments and local tools
+####################################################################
 
 DEV_VIRTUAL_ENVS_DIR = .dev_virtualenvs
 
@@ -140,12 +164,22 @@ RUST_UTILS = print-interface-of-wasm-module
 BUILD_RUST_UTILS = $(addprefix build-rust-util_, $(RUST_UTILS))
 REMOVE_ACTIVATE_LINK_FROM_RUST_UTILS = $(addprefix remove-hard-link-to-rust-venv_, $(RUST_UTILS))
 
-# Why build all of the Rust utils on dev-init? This is done to frontload all the work of building the dependencies of these utils.
-dev-init: install-pre-commit-hooks $(BUILD_RUST_UTILS) | ${DEV_PYTHON_VIRTUAL_ENV} ${DEV_RUST_VIRTUAL_ENV}
+# Each Binaryen utility needed should be listed here so it can be built during dev-init
+BINARYEN_DIR = .binaryen
+BINARYEN_UTIL_NAMES = wasm-as wasm-merge wasm-metadce
+BINARYEN_UTILS = $(addprefix $(BINARYEN_DIR)/bin/, $(BINARYEN_UTIL_NAMES))
+
+WASM_AS = $(BINARYEN_DIR)/bin/wasm-as
+WASM_MERGE = $(BINARYEN_DIR)/bin/wasm-merge
+WASM_METADCE = $(BINARYEN_DIR)/bin/wasm-metadce
+
+# Why build all of the Rust utils and Binaryen tools on dev-init? This is done to frontload all the work of building the dependencies of these utils.
+dev-init: install-pre-commit-hooks $(BUILD_RUST_UTILS) $(BINARYEN_UTILS) | ${DEV_PYTHON_VIRTUAL_ENV} ${DEV_RUST_VIRTUAL_ENV}
 
 dev-clean: uninstall-pre-commit-hooks $(REMOVE_ACTIVATE_LINK_FROM_RUST_UTILS)
 	${VB} rm -fr ${DEV_PYTHON_VIRTUAL_ENV}
 	${VB} rm -fr ${DEV_RUST_VIRTUAL_ENV}
+	${VB} rm -fr ${BINARYEN_DIR}
 
 install-pre-commit-hooks: | ${DEV_PYTHON_VIRTUAL_ENV}
 	@echo [Installing pre-commit hooks]
@@ -220,6 +254,21 @@ $(REMOVE_ACTIVATE_LINK_FROM_RUST_UTILS): remove-hard-link-to-rust-venv_%:
 	@echo [Removing hard link to Rust virtual env activate script that is in the util '$*']
 	${VB}rm utils/$*/$(HARD_LINK_TO_RUST_VIRTUAL_ENV_ACTIVATE_SCRIPT)
 
+${BINARYEN_DIR}:
+	@echo [Configuring a local copy of Binaryen tools source code]
+	${VB}git clone git@github.com:WebAssembly/binaryen.git --branch version_119 --depth 1 $@; \
+	cd $@; \
+	cmake -DBUILD_TESTS=OFF .;
+
+# Target for building any Binaryen utility listed in BINARYEN_UTILS
+#
+# Note: A binaryen tool can take a long time to build, like 10 minutes or more, and these tools could just be run
+# inside a docker container that has the tools pre-built, making it much quicker to build the main artifact of this
+# repo from scratch.
+# TODO: leverage Binaryen tools pre-built in an external docker image
+$(BINARYEN_UTILS): ${BINARYEN_DIR}/bin/%: ${BINARYEN_DIR}
+	@echo [Building the Binaryen util '$*']
+	${VB}$(MAKE) --directory=$< $*
 
 ##########################################################
 # Targets for manually running pre-commit tests
