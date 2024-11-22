@@ -13,37 +13,41 @@
 // *                             IMPORTED FUNCTIONS                            *
 // *****************************************************************************
 
-__attribute__((import_module("ui"))) void onGameInit(int width, int height);
-__attribute__((import_module("ui"))) void drawFrame(uint32_t *screenBuffer);
-__attribute__((import_module("ui"))) void setWindowTitle(const char *title);
+#define IMPORT_MODULE(moduleName) __attribute__((import_module(moduleName)))
 
-__attribute__((import_module("runtimeControl"))) void sleepMs(uint32_t ms);
-__attribute__((import_module("runtimeControl"))) uint32_t getTicksMs();
+IMPORT_MODULE("loading") void onGameInit(int width, int height);
+IMPORT_MODULE("loading")
+void getWadsSizes(int *numberOfWads, size_t *numberOfTotalBytesInAllWads);
+IMPORT_MODULE("loading")
+void readDataForAllWads(unsigned char *wadDataDestination,
+                        int *byteLengthOfEachWad);
 
-__attribute__((import_module("loading"))) void
-getWadsSizes(int *numberOfWads, size_t *numberOfTotalBytesInAllWads);
-__attribute__((import_module("loading"))) void
-readDataForAllWads(unsigned char *wadDataDestination, int *byteLengthOfEachWad);
+IMPORT_MODULE("ui") void drawFrame(uint32_t *screenBuffer);
+IMPORT_MODULE("ui") void setWindowTitle(const char *title);
+
+IMPORT_MODULE("runtimeControl") void sleepMs(uint32_t ms);
+IMPORT_MODULE("runtimeControl") uint32_t getTicksMs();
 
 // Return the size of the associated save game data, 0 in the case that no save
 // data exists for this slot
-__attribute__((import_module("gameSaving"))) size_t
-sizeOfSaveGame(int gameSaveId);
+IMPORT_MODULE("gameSaving") size_t sizeOfSaveGame(int gameSaveId);
 // Return the number of bytes read
-__attribute__((import_module("gameSaving"))) size_t
-readSaveGame(int gameSaveId, unsigned char *dataDestination);
+IMPORT_MODULE("gameSaving")
+size_t readSaveGame(int gameSaveId, unsigned char *dataDestination);
 // Return the number of bytes written
-__attribute__((import_module("gameSaving"))) size_t
-writeSaveGame(int gameSaveId, unsigned char *data, size_t length);
+IMPORT_MODULE("gameSaving")
+size_t writeSaveGame(int gameSaveId, unsigned char *data, size_t length);
 
 // *****************************************************************************
 // *                             EXPORTED FUNCTIONS                            *
 // *****************************************************************************
 
-__attribute__((visibility("default"))) void initGame();
-__attribute__((visibility("default"))) void tickGame();
-__attribute__((visibility("default"))) void reportKeyDown(uint8_t doomKey);
-__attribute__((visibility("default"))) void reportKeyUp(uint8_t doomKey);
+#define EXPORT __attribute__((visibility("default")))
+
+EXPORT void initGame();
+EXPORT void tickGame();
+EXPORT void reportKeyDown(uint8_t doomKey);
+EXPORT void reportKeyUp(uint8_t doomKey);
 
 // *****************************************************************************
 // *                           IMPLEMENTATION DETAILS                          *
