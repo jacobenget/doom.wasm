@@ -4,6 +4,7 @@
 
 #include "doomgeneric.h"
 #include "doom_wasm.h"
+#include "file_embedded_in_code/DOOM1.WAD.h"
 
 /*
  * This file reconciles the WebAssembly interface (i.e. imports/exports)
@@ -105,9 +106,13 @@ struct DB_BytesForAllWads DG_GetWads() {
       dataForNextWad += byteLengthOfEachWad[i + 1];
     }
   } else {
-    fprintf(
-        stderr,
-        "At least one WAD must be provided, but `getWadsSizes` reported 0.\n");
+    printf("Defaulting to loading Doom shareware WAD because no WAD data was "
+           "provided\n");
+    result.iWad.data = malloc(DOOM1_WAD_length);
+    memcpy(result.iWad.data, DOOM1_WAD_data, DOOM1_WAD_length);
+    result.iWad.byteLength = DOOM1_WAD_length;
+    result.numberOfPWads = 0;
+    result.pWads = 0;
   }
 
   return result;

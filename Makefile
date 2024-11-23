@@ -35,11 +35,18 @@ OUTPUT = $(OUTPUT_DIR)/$(OUTPUT_NAME)
 OUTPUT_RAW_FROM_LINKING = $(OUTPUT_DIR)/doom-directly-after-linking.wasm
 OUTPUT_UTIL_WASM_MODULES = $(OUTPUT_DIR)/util-wasm-modules
 
+FILE_EMBEDDED_IN_CODE_DIR = $(OUTPUT_DIR)/file_embedded_in_code
+FILE_EMBEDDED_IN_CODE_OUTPUT_DIR = $(FILE_EMBEDDED_IN_CODE_DIR)/$(OUTPUT_DIR)
+
 SRC_DOOM = dummy.c am_map.c doomdef.c doomstat.c dstrings.c d_event.c d_items.c d_iwad.c d_loop.c d_main.c d_mode.c d_net.c f_finale.c f_wipe.c g_game.c hu_lib.c hu_stuff.c info.c i_cdmus.c i_endoom.c i_joystick.c i_scale.c i_sound.c i_system.c i_timer.c memio.c m_argv.c m_bbox.c m_cheat.c m_config.c m_controls.c m_fixed.c m_menu.c m_misc.c m_random.c p_ceilng.c p_doors.c p_enemy.c p_floor.c p_inter.c p_lights.c p_map.c p_maputl.c p_mobj.c p_plats.c p_pspr.c p_saveg.c p_setup.c p_sight.c p_spec.c p_switch.c p_telept.c p_tick.c p_user.c r_bsp.c r_data.c r_draw.c r_main.c r_plane.c r_segs.c r_sky.c r_things.c sha1.c sounds.c statdump.c st_lib.c st_stuff.c s_sound.c tables.c v_video.c wi_stuff.c w_checksum.c w_file.c w_wad.c z_zone.c i_input.c i_video.c doomgeneric.c
 SRC_DOOM_WASM_SPECIFIC = doom_wasm.c internal__wasi-snapshot-preview1.c
+EMBEDDED_BINARY_FILES = DOOM1.WAD
+SRC_FOR_EMBEDDED_FILES = $(addprefix $(FILE_EMBEDDED_IN_CODE_DIR)/, $(addsuffix .c, $(EMBEDDED_BINARY_FILES)))
+HEADERS_FOR_EMBEDDED_FILES = $(addprefix $(FILE_EMBEDDED_IN_CODE_DIR)/, $(addsuffix .h, $(EMBEDDED_BINARY_FILES)))
 
 OBJS += $(addprefix $(OUTPUT_DIR)/, $(patsubst %.c, %.o, $(SRC_DOOM)))
 OBJS_WASM_SPECIFIC += $(addprefix $(OUTPUT_DIR_WASM_SPECIFIC)/, $(patsubst %.c, %.o, $(SRC_DOOM_WASM_SPECIFIC)))
+OBJS_EMBEDDED_FILE += $(addprefix $(FILE_EMBEDDED_IN_CODE_OUTPUT_DIR)/, $(addsuffix .o, $(EMBEDDED_BINARY_FILES)))
 
 # The WASI SDK (https://github.com/WebAssembly/wasi-sdk) conventiently packages up all that's needed to use Clang to compile to WebAssembly,
 # and what's even better is that they provide a Docker image with all needed tools already installed and configured: https://github.com/WebAssembly/wasi-sdk?tab=readme-ov-file#docker-image
@@ -57,7 +64,7 @@ clean:
 # This target exists as a way to save time when the main artifact has to be built from scratch.
 # It saves time by not having to step into and out of a docker container each time one dependency of the main artifact has to be built.
 # One sampling of the time difference between this approach and the alternative `make $(OUTPUT)` showed a savings of around 30% (~2 mins vs. ~3 mins) when building from scratch.
-doom:
+doom: $(SRC_FOR_EMBEDDED_FILES) $(HEADERS_FOR_EMBEDDED_FILES)
 	@echo [Delegating to WASI SDK Docker image just once]
 	$(VB)${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $(OUTPUT_RAW_FROM_LINKING)
 	@echo [Stepping out of WASI SDK Docker image for final steps of building the main artifact]
@@ -67,10 +74,10 @@ doom:
 # We do this by detecting when the literal phrase 'wasi' DOESN'T appear in the path to the compiler
 # (e.g. you're running locally and aren't configured to use a local WASI SDK installation)
 # and then rerunning this `make` target in a docker container based on the WASI SDK docker image.
-$(OUTPUT_RAW_FROM_LINKING): $(OBJS) $(OBJS_WASM_SPECIFIC)
+$(OUTPUT_RAW_FROM_LINKING): $(OBJS) $(OBJS_WASM_SPECIFIC) $(OBJS_EMBEDDED_FILE)
 	$(VB)if echo "$(CC)" | grep -q "wasi"; then \
 		echo [Linking $@]; \
-		$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(OBJS_WASM_SPECIFIC) -s -o $@ $(LIBS); \
+		$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(OBJS_WASM_SPECIFIC) $(OBJS_EMBEDDED_FILE) -s -o $@ $(LIBS); \
 	else \
 		echo [Delegating to WASI SDK Docker image]; \
 		${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $@; \
@@ -80,7 +87,9 @@ $(OBJS): | $(OUTPUT_DIR)
 
 $(OBJS_WASM_SPECIFIC): | $(OUTPUT_DIR_WASM_SPECIFIC)
 
-OUTPUT_DIRS = $(OUTPUT_DIR) $(OUTPUT_DIR_WASM_SPECIFIC) $(OUTPUT_UTIL_WASM_MODULES)
+$(OBJS_EMBEDDED_FILE): | $(FILE_EMBEDDED_IN_CODE_OUTPUT_DIR)
+
+OUTPUT_DIRS = $(OUTPUT_DIR) $(OUTPUT_DIR_WASM_SPECIFIC) $(OUTPUT_UTIL_WASM_MODULES) $(FILE_EMBEDDED_IN_CODE_DIR) $(FILE_EMBEDDED_IN_CODE_OUTPUT_DIR)
 
 $(OUTPUT_DIRS):
 	@echo [Creating output folder \'$@\']
@@ -99,14 +108,36 @@ $(OUTPUT_DIR)/%.o:	doomgeneric/src/%.c
 		${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $@; \
 	fi
 
-$(OUTPUT_DIR_WASM_SPECIFIC)/%.o:	src/%.c
+$(OUTPUT_DIR_WASM_SPECIFIC)/%.o:	src/%.c $(HEADERS_FOR_EMBEDDED_FILES)
 	$(VB)if echo "$(CC)" | grep -q "wasi"; then \
 		echo [Compiling $<]; \
-		$(CC) $(CFLAGS) -I$(DIR_CONTAINING_THIS_MAKEFILE)/doomgeneric -c $< -o $@; \
+		$(CC) $(CFLAGS) -I$(DIR_CONTAINING_THIS_MAKEFILE)/doomgeneric -I$(OUTPUT_DIR) -c $< -o $@; \
 	else \
 		echo [Delegating to WASI SDK Docker image]; \
 		${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $@; \
 	fi
+
+$(FILE_EMBEDDED_IN_CODE_OUTPUT_DIR)/%.o:	$(FILE_EMBEDDED_IN_CODE_DIR)/%.c
+	$(VB)if echo "$(CC)" | grep -q "wasi"; then \
+		echo [Compiling $<]; \
+		$(CC) $(CFLAGS) -c $< -o $@; \
+	else \
+		echo [Delegating to WASI SDK Docker image]; \
+		${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $@; \
+	fi
+
+# Provide the Doom shareware WAD by retrieving it via the URL advertised here: https://doomwiki.org/wiki/DOOM1.WAD
+$(OUTPUT_DIR)/DOOM1.WAD: | $(OUTPUT_DIR)
+	@echo [Retreiving Shareware Doom WAD from the internet]
+	$(VB)curl --output $(OUTPUT_DIR)/DOOM1.WAD https://distro.ibiblio.org/slitaz/sources/packages/d/doom1.wad
+
+# Support generating .c and .h files that contain and reference, respectively, an embedded copy of another file
+$(FILE_EMBEDDED_IN_CODE_DIR)/%.c $(FILE_EMBEDDED_IN_CODE_DIR)/%.h: $(OUTPUT_DIR)/% utils/generate_code_for_embedded_file.py | $(FILE_EMBEDDED_IN_CODE_DIR)
+	@echo [Generating $(<F).c and $(<F).h, the source and header file to embed '$<']
+	${VB}( \
+		${ACTIVATE_DEV_PYTHON_VIRTUAL_ENV}; \
+		python utils/generate_code_for_embedded_file.py --input $< --destination-folder $(FILE_EMBEDDED_IN_CODE_DIR) ; \
+	)
 
 # Compile .wat files in src/wat in order to produce an associated .wasm module in $(OUTPUT_DIR)/util-wasm-modules
 $(OUTPUT_UTIL_WASM_MODULES)/%.wasm: src/wat/%.wat $(WASM_AS) | $(OUTPUT_UTIL_WASM_MODULES)
