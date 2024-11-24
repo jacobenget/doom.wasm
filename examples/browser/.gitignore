@@ -1,0 +1,2 @@
+# Ignore the folder where we keep a local copy of doom.wasm
+/assets/
