@@ -1,0 +1,7 @@
+[requires]
+wasmtime/21.0.0
+sdl/2.30.8
+
+[generators]
+CMakeDeps
+CMakeToolchain
