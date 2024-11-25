@@ -261,7 +261,7 @@ $(OUTPUT_DIR)/DOOM1.WAD: | $(OUTPUT_DIR)
 	$(VB)curl --output $(OUTPUT_DIR)/DOOM1.WAD https://distro.ibiblio.org/slitaz/sources/packages/d/doom1.wad
 
 # Support generating .c and .h files that contain and reference, respectively, an embedded copy of another file
-$(FILE_EMBEDDED_IN_CODE_DIR)/%.c $(FILE_EMBEDDED_IN_CODE_DIR)/%.h: $(OUTPUT_DIR)/% utils/generate_code_for_embedded_file.py | $(FILE_EMBEDDED_IN_CODE_DIR)
+$(FILE_EMBEDDED_IN_CODE_DIR)/%.c $(FILE_EMBEDDED_IN_CODE_DIR)/%.h: $(OUTPUT_DIR)/% utils/generate_code_for_embedded_file.py | $(FILE_EMBEDDED_IN_CODE_DIR) ${DEV_PYTHON_VIRTUAL_ENV}
 	@echo [Here's what we're depending on: ${DEV_PYTHON_VIRTUAL_ENV}]
 	@echo [Generating $(<F).c and $(<F).h, the source and header file to embed '$<']
 	${VB}( \
