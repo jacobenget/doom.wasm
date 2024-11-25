@@ -1,79 +1,103 @@
 <!DOCTYPE html>
 <!--
-  Doom - playable in a browser!
+  Doom - Playable in a browser!
 
-  Here the Doom WebAssembly module is loaded via JavaScript and it's inputs
-  and output are connected up to an HTML Canvas, making the game fully playable.
+  Here the `doom.wasm` WebAssembly module is loaded via JavaScript and its inputs
+  and output are connected to an HTML Canvas, making the game fully playable.
 
   Both 'info' and 'error' messages from Doom are logged to the browser's console.
 
   The Doom shareware WAD is always loaded as the game's content.
 
-  Saving of the game is not supported.
+  Saving of game progress is not supported.
 -->
 <html>
   <head>
     <title>Doom!</title>
     <script type="text/javascript">
 
-      // Loads Doom and attaches it to the given canvas element
+      // Load Doom and attach it to the provided Canvas element
       function loadDoomGame(canvas) {
 
-        // This reference to the module instance's exported memory will be filled in one the module instance has been loaded successfully.
+        // This reference to the module instance's exported memory will be filled in
+        // once the module instance has been loaded successfully.
         let moduleInstanceMemory = null;
-        let imageData = null; // filled in once we know the (width, height) of Doom's framebuffer
-        let ctx = canvas.getContext('2d');
 
+        let ctx = canvas.getContext('2d');
+        // An ImageData instance will be used to transfer the pixels of a Doom frame buffer to the HTML canvas
+        let scratchSpaceImageData = null; // Initialized once we know the width and height of Doom's framebuffer
+
+        //////////////////////////////////////////////////////////////////////////////
+        // Define all the non-trivial functions that we'll provide as imports to Doom
+        //////////////////////////////////////////////////////////////////////////////
+
+        function onGameInit(width, height) {
+          // Have the canvas be the exact same size as the Doom frame buffer,
+          // so canvas's pixels will be 1-to-1 to the pixels in the Doom frame buffer
+          canvas.width = width;
+          canvas.height = height;
+          scratchSpaceImageData = ctx.createImageData(width, height);
+        }
+
+        function drawFrame(indexOfFrameBuffer) {
+          // Copy all pixels from the Doom frame buffer to the similarly sized ImageData.
+
+          let doomFrameBuffer = new Uint8Array(moduleInstanceMemory.buffer, indexOfFrameBuffer, canvas.width * canvas.height * 4);
+
+          for (var i = 0; i < (scratchSpaceImageData.data.length / 4); i++) {
+            // The pixels in an ImageData are made up of 32-bits each, with 8-bit color components ordered
+            // "RGBA", from low to high index. See: https://developer.mozilla.org/en-US/docs/Web/API/ImageData/data
+            //
+            // Doom Frame buffer pixels are also 32-bit, but have their 8-bit color components logically
+            // ordered "ARGB". But, these 32-bit values are stored in little-endian order (because
+            // WebAssembly always orders multi-byte values in a little-endian way), so the order of the
+            // bytes in each pixel are reversed, and actually ordered "BGRA", from low to high index.
+            scratchSpaceImageData.data[4*i+0] = doomFrameBuffer[4*i+2];  // Red
+            scratchSpaceImageData.data[4*i+1] = doomFrameBuffer[4*i+1];  // Green
+            scratchSpaceImageData.data[4*i+2] = doomFrameBuffer[4*i+0];  // Blue
+            scratchSpaceImageData.data[4*i+3] = 255;  // Alpha (make pixel fully opaque)
+          }
+
+          // And then copy the edited ImageData to the canvas's 2d context
+          ctx.putImageData(scratchSpaceImageData, 0, 0);
+        }
+
+        function timeInMilliseconds() {
+          return BigInt(Math.trunc(performance.now()));
+        }
+
+        function onInfoMessage(messagePtr, length) {
+          // Log all 'info' messages to the console
+          const message = readModuleMemoryAsUtf8String(moduleInstanceMemory, messagePtr, length);
+          console.log(`[Doom stdout] ${message}`);
+        }
+
+        function onErrorMessage(messagePtr, length) {
+          // Log all 'error' messages to the console
+          const message = readModuleMemoryAsUtf8String(moduleInstanceMemory, messagePtr, length);
+          console.error(`[Doom stderr] ${message}`);
+        }
+
+        //////////////////////////////////////////////////////////////////////////////
         // Specify all the imports needed by Doom
+        //////////////////////////////////////////////////////////////////////////////
+
         let imports = {
           "loading": {
-            "onGameInit": (width, height) => {
-              // Have the canvas be the exact same size as the Doom frame buffer,
-              // so canvas's pixels are 1-to-1 to the pixels in the Doom frame buffer
-              canvas.width = width;
-              canvas.height = height;
-              imageData = ctx.createImageData(canvas.width, canvas.height);
-            },
-            // Provide no WAD data, so the module defaults to using the Doom shareware WAD
+            "onGameInit": onGameInit,
+            // Provide no WAD data, so the module defaults to using the Doom Shareware WAD
             "wadSizes": () => {},
             "readWads": () => {},
           },
           "ui": {
-            "drawFrame": (indexOfFrameBuffer) => {
-              // Copy all pixels from the Doom frame buffer to the similarly sized ImageData.
-              let doomFrameBuffer = new Uint8Array(moduleInstanceMemory.buffer, indexOfFrameBuffer, canvas.width * canvas.height * 4);
-
-              for (var i = 0; i < (imageData.data.length / 4); i++) {
-                // The pixels in an ImageData are 32-bits with 8-bit color components ordered "RGBA".
-                // See: https://developer.mozilla.org/en-US/docs/Web/API/ImageData/data
-                //
-                // Doom Frame buffer pixels are also 32-bit and have their 8-bit color components
-                // logically ordered "ARGB", but this 32-bit value is stored in little-endian order
-                // (because WebAssembly always orders multi-byte values in a little-endian way),
-                // so the order of the bytes is reversed and is actually "BGRA".
-                imageData.data[4*i+0] = doomFrameBuffer[4*i+2];  // Red
-                imageData.data[4*i+1] = doomFrameBuffer[4*i+1];  // Green
-                imageData.data[4*i+2] = doomFrameBuffer[4*i+0];  // Blue
-                imageData.data[4*i+3] = 255;  // Alpha (make pixel fully opaque)
-              }
-
-              // And then copy the edited ImageData to the canvas's 2d context
-              ctx.putImageData(imageData, 0, 0);
-            },
+            "drawFrame": drawFrame,
           },
           "runtimeControl": {
-            "timeInMilliseconds": () => BigInt(Math.trunc(performance.now())),
+            "timeInMilliseconds": timeInMilliseconds
           },
           "console": {
-            // Log all 'info' and 'error' messages to the console
-            "onInfoMessage": (messagePtr, length) => {
-              const message = readModuleMemoryAsUtf8String(moduleInstanceMemory, messagePtr, length);
-              console.log(`[Doom stdout] ${message}`);
-            },
-            "onErrorMessage": (messagePtr, length) => {
-              const message = readModuleMemoryAsUtf8String(moduleInstanceMemory, messagePtr, length);
-              console.error(`[Doom stderr] ${message}`);
-            },
+            "onInfoMessage": onInfoMessage,
+            "onErrorMessage": onErrorMessage,
           },
           "gameSaving": {
             // Provide no support for saving games
@@ -83,18 +107,21 @@
           },
         };
 
-        // Retrieve the Doom WebAssembly module and instantiate it with our imports
+        //////////////////////////////////////////////////////////////////////////////
+        // Retrieve the Doom WebAssembly module, instantiate it with our imports,
+        // and then use the module instance to run Doom!
+        //////////////////////////////////////////////////////////////////////////////
+
         WebAssembly.instantiateStreaming(fetch("assets/doom.wasm"), imports).then(({instance}) => {
 
           let exports = instance.exports;
+
           // Cache a reference to the module's exported memory, for use by functions imported by the module
           moduleInstanceMemory = exports.memory;
 
-          exports.initGame();
-
-          // Sign up to call tickGame once every frame, and Doom likes to run at 35 frames per second
-          setInterval(exports.tickGame, 1000 / 35);
-
+          // Associate some JavaScript key values with 'Doom key' values that were exported from the
+          // WebAssembly module (E.g. when the user presses the "Control" key we want to associate this
+          // with the KEY_FIRE value)
           const doomKeyFromJavascriptKey = new Map([
             ["ArrowLeft", exports.KEY_LEFTARROW],
             ["ArrowRight", exports.KEY_RIGHTARROW],
@@ -117,7 +144,7 @@
           function convertKeyEventToDoomKey(javaScriptKeyEvent) {
             let correspondingDoomKey = null;
             if (doomKeyFromJavascriptKey.has(javaScriptKeyEvent.key)) {
-              // Support keys that we've explicitly associated with a Doom key (e.g. "Control")
+              // Support keys (e.g. "Control") that we've explicitly associated with a Doom key
               correspondingDoomKey = doomKeyFromJavascriptKey.get(javaScriptKeyEvent.key);
             } else if (javaScriptKeyEvent.key.length == 1) {
               // Support keys that are just a single character (e.g. '1'), and in that case
@@ -144,10 +171,17 @@
           });
           canvas.addEventListener('keyup', function(event) {
             const doomKey = convertKeyEventToDoomKey(event);
-            if (doomKey != null) {
+            if (doomKey !== null) {
               exports.reportKeyUp(doomKey);
             }
           });
+
+          // Initialize Doom
+          exports.initGame();
+
+          // Sign up to call Doom's tickGame function on a regular interval
+          // Doom likes to run at 35 frames per second, which is what we'll aim for
+          setInterval(exports.tickGame, 1000 / 35);
         });
       }
 
@@ -169,6 +203,7 @@
     <style>
       /*
         Keyboard input only passes to an HTML canvas when that canvas has focus.
+
         Draw the canvas a little bit transparent when it doesn't have focus to better communicate
         the state of "not receiving user input" to the user.
       */
