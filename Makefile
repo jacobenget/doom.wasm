@@ -11,195 +11,7 @@ PATH_TO_THIS_MAKEFILE := $(abspath $(lastword $(MAKEFILE_LIST)))
 DIR_CONTAINING_THIS_MAKEFILE := $(dir PATH_TO_THIS_MAKEFILE)
 
 
-###########################################################################
-# Targets for building a WebAssembly module from the Doom source code
-###########################################################################
-
-CFLAGS += --target=wasm32-unknown-wasi -Wall -g -Os
-# Details on a few of the linker flags used:
-#
-#   -Wl,  <-- needed to pass the immediately following option directly to the linker,
-#   --export-dynamic  <-- have linker export all non-hidden symbols
-#       see https://lld.llvm.org/WebAssembly.html#cmdoption-export-dynamic
-#   --import-undefined  <-- produce a WebAssembly import for any undefined symbols, where possible
-#       see https://lld.llvm.org/WebAssembly.html#cmdoption-import-undefined
-#   -mexec-model=reactor  <-- says "this isn't a command/program with a 'main' function that drives its execution, instead this is a library with a lifetime controlled by the user",
-#       see https://clang.llvm.org/docs/ClangCommandLineReference.html#cmdoption-clang-mexec-model
-LDFLAGS += -Wl,--export-dynamic -Wl,--import-undefined -mexec-model=reactor
-LIBS += -lm -lc
-
-OUTPUT_DIR = build
-OUTPUT_DIR_WASM_SPECIFIC = $(OUTPUT_DIR)/wasm_specific
-OUTPUT_NAME = doom.wasm
-OUTPUT = $(OUTPUT_DIR)/$(OUTPUT_NAME)
-OUTPUT_RAW_FROM_LINKING = $(OUTPUT_DIR)/doom-directly-after-linking.wasm
-OUTPUT_UTIL_WASM_MODULES = $(OUTPUT_DIR)/util-wasm-modules
-
-FILE_EMBEDDED_IN_CODE_DIR = $(OUTPUT_DIR)/file_embedded_in_code
-FILE_EMBEDDED_IN_CODE_OUTPUT_DIR = $(FILE_EMBEDDED_IN_CODE_DIR)/$(OUTPUT_DIR)
-
-SRC_DOOM = dummy.c am_map.c doomdef.c doomstat.c dstrings.c d_event.c d_items.c d_iwad.c d_loop.c d_main.c d_mode.c d_net.c f_finale.c f_wipe.c g_game.c hu_lib.c hu_stuff.c info.c i_cdmus.c i_endoom.c i_joystick.c i_scale.c i_sound.c i_system.c i_timer.c memio.c m_argv.c m_bbox.c m_cheat.c m_config.c m_controls.c m_fixed.c m_menu.c m_misc.c m_random.c p_ceilng.c p_doors.c p_enemy.c p_floor.c p_inter.c p_lights.c p_map.c p_maputl.c p_mobj.c p_plats.c p_pspr.c p_saveg.c p_setup.c p_sight.c p_spec.c p_switch.c p_telept.c p_tick.c p_user.c r_bsp.c r_data.c r_draw.c r_main.c r_plane.c r_segs.c r_sky.c r_things.c sha1.c sounds.c statdump.c st_lib.c st_stuff.c s_sound.c tables.c v_video.c wi_stuff.c w_checksum.c w_file.c w_wad.c z_zone.c i_input.c i_video.c doomgeneric.c
-SRC_DOOM_WASM_SPECIFIC = doom_wasm.c internal__wasi-snapshot-preview1.c
-EMBEDDED_BINARY_FILES = DOOM1.WAD
-SRC_FOR_EMBEDDED_FILES = $(addprefix $(FILE_EMBEDDED_IN_CODE_DIR)/, $(addsuffix .c, $(EMBEDDED_BINARY_FILES)))
-HEADERS_FOR_EMBEDDED_FILES = $(addprefix $(FILE_EMBEDDED_IN_CODE_DIR)/, $(addsuffix .h, $(EMBEDDED_BINARY_FILES)))
-
-OBJS += $(addprefix $(OUTPUT_DIR)/, $(patsubst %.c, %.o, $(SRC_DOOM)))
-OBJS_WASM_SPECIFIC += $(addprefix $(OUTPUT_DIR_WASM_SPECIFIC)/, $(patsubst %.c, %.o, $(SRC_DOOM_WASM_SPECIFIC)))
-OBJS_EMBEDDED_FILE += $(addprefix $(FILE_EMBEDDED_IN_CODE_OUTPUT_DIR)/, $(addsuffix .o, $(EMBEDDED_BINARY_FILES)))
-
-# The WASI SDK (https://github.com/WebAssembly/wasi-sdk) conventiently packages up all that's needed to use Clang to compile to WebAssembly,
-# and what's even better is that they provide a Docker image with all needed tools already installed and configured: https://github.com/WebAssembly/wasi-sdk?tab=readme-ov-file#docker-image
-RUN_IN_WASI_SDK_DOCKER_IMAGE = docker run --rm -v $(DIR_CONTAINING_THIS_MAKEFILE):/repo -w /repo ghcr.io/webassembly/wasi-sdk:wasi-sdk-24
-
-
 all: doom
-
-clean:
-	rm -rf $(OUTPUT_DIR)
-
-# TARGET THAT ONLY EXISTS AS AN OPTIMIZATION
-#
-# THis is a target that builds the main artifact by immediately delegating to the WASI SDK docker image to compile all source code.
-# This target exists as a way to save time when the main artifact has to be built from scratch.
-# It saves time by not having to step into and out of a docker container each time one dependency of the main artifact has to be built.
-# One sampling of the time difference between this approach and the alternative `make $(OUTPUT)` showed a savings of around 30% (~2 mins vs. ~3 mins) when building from scratch.
-doom: $(SRC_FOR_EMBEDDED_FILES) $(HEADERS_FOR_EMBEDDED_FILES)
-	@echo [Delegating to WASI SDK Docker image just once]
-	$(VB)${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $(OUTPUT_RAW_FROM_LINKING)
-	@echo [Stepping out of WASI SDK Docker image for final steps of building the main artifact]
-	$(VB)$(MAKE) $(MAKEFLAGS) $(OUTPUT)
-
-# Link all object files together to produce the needed artifact, but make sure that linking happens via the WASI SDK.
-# We do this by detecting when the literal phrase 'wasi' DOESN'T appear in the path to the compiler
-# (e.g. you're running locally and aren't configured to use a local WASI SDK installation)
-# and then rerunning this `make` target in a docker container based on the WASI SDK docker image.
-$(OUTPUT_RAW_FROM_LINKING): $(OBJS) $(OBJS_WASM_SPECIFIC) $(OBJS_EMBEDDED_FILE)
-	$(VB)if echo "$(CC)" | grep -q "wasi"; then \
-		echo [Linking $@]; \
-		$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(OBJS_WASM_SPECIFIC) $(OBJS_EMBEDDED_FILE) -s -o $@ $(LIBS); \
-	else \
-		echo [Delegating to WASI SDK Docker image]; \
-		${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $@; \
-	fi
-
-$(OBJS): | $(OUTPUT_DIR)
-
-$(OBJS_WASM_SPECIFIC): | $(OUTPUT_DIR_WASM_SPECIFIC)
-
-$(OBJS_EMBEDDED_FILE): | $(FILE_EMBEDDED_IN_CODE_OUTPUT_DIR)
-
-OUTPUT_DIRS = $(OUTPUT_DIR) $(OUTPUT_DIR_WASM_SPECIFIC) $(OUTPUT_UTIL_WASM_MODULES) $(FILE_EMBEDDED_IN_CODE_DIR) $(FILE_EMBEDDED_IN_CODE_OUTPUT_DIR)
-
-$(OUTPUT_DIRS):
-	@echo [Creating output folder \'$@\']
-	$(VB)mkdir -p $@
-
-# Produce object files by compiling the related source file, but make sure that compiling happens via the WASI SDK.
-# We do this by detecting when the literal phrase 'wasi' DOESN'T appear in the path to the compiler
-# (e.g. you're running locally and aren't configured to use a local WASI SDK installation)
-# and then rerunning this `make` target in a docker container based on the WASI SDK docker image.
-$(OUTPUT_DIR)/%.o:	doomgeneric/src/%.c
-	$(VB)if echo "$(CC)" | grep -q "wasi"; then \
-		echo [Compiling $<]; \
-		$(CC) $(CFLAGS) -I$(DIR_CONTAINING_THIS_MAKEFILE)/doomgeneric -I$(DIR_CONTAINING_THIS_MAKEFILE)/doomgeneric/include -c $< -o $@; \
-	else \
-		echo [Delegating to WASI SDK Docker image]; \
-		${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $@; \
-	fi
-
-$(OUTPUT_DIR_WASM_SPECIFIC)/%.o:	src/%.c $(HEADERS_FOR_EMBEDDED_FILES)
-	$(VB)if echo "$(CC)" | grep -q "wasi"; then \
-		echo [Compiling $<]; \
-		$(CC) $(CFLAGS) -I$(DIR_CONTAINING_THIS_MAKEFILE)/doomgeneric -I$(OUTPUT_DIR) -c $< -o $@; \
-	else \
-		echo [Delegating to WASI SDK Docker image]; \
-		${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $@; \
-	fi
-
-$(FILE_EMBEDDED_IN_CODE_OUTPUT_DIR)/%.o:	$(FILE_EMBEDDED_IN_CODE_DIR)/%.c
-	$(VB)if echo "$(CC)" | grep -q "wasi"; then \
-		echo [Compiling $<]; \
-		$(CC) $(CFLAGS) -c $< -o $@; \
-	else \
-		echo [Delegating to WASI SDK Docker image]; \
-		${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $@; \
-	fi
-
-# Provide the Doom shareware WAD by retrieving it via the URL advertised here: https://doomwiki.org/wiki/DOOM1.WAD
-$(OUTPUT_DIR)/DOOM1.WAD: | $(OUTPUT_DIR)
-	@echo [Retreiving Shareware Doom WAD from the internet]
-	$(VB)curl --output $(OUTPUT_DIR)/DOOM1.WAD https://distro.ibiblio.org/slitaz/sources/packages/d/doom1.wad
-
-# Support generating .c and .h files that contain and reference, respectively, an embedded copy of another file
-$(FILE_EMBEDDED_IN_CODE_DIR)/%.c $(FILE_EMBEDDED_IN_CODE_DIR)/%.h: $(OUTPUT_DIR)/% utils/generate_code_for_embedded_file.py | $(FILE_EMBEDDED_IN_CODE_DIR)
-	@echo [Generating $(<F).c and $(<F).h, the source and header file to embed '$<']
-	${VB}( \
-		${ACTIVATE_DEV_PYTHON_VIRTUAL_ENV}; \
-		python utils/generate_code_for_embedded_file.py --input $< --destination-folder $(FILE_EMBEDDED_IN_CODE_DIR) ; \
-	)
-
-# Compile .wat files in src/wat in order to produce an associated .wasm module in $(OUTPUT_DIR)/util-wasm-modules
-$(OUTPUT_UTIL_WASM_MODULES)/%.wasm: src/wat/%.wat $(WASM_AS) | $(OUTPUT_UTIL_WASM_MODULES)
-	@echo [Compiling WAT file \'$<\']
-	$(VB)$(WASM_AS) $< -o $@
-
-BINARYEN_FLAGS = --enable-bulk-memory
-
-# After compilation and linking has finished the Doom WebAssembly module passes through a few custom
-# transformations before it's considered complete:
-#
-#
-#   1. All needed `wasi_snapshot_preview1` imports are filled by calling back into similarly named exports
-OUTPUT_INTERMEDIATE_WITH_WASI_HOLES_FILLED = $(OUTPUT_DIR)/doom-with-wasi-holes-filled.wasm
-$(OUTPUT_INTERMEDIATE_WITH_WASI_HOLES_FILLED): $(OUTPUT_RAW_FROM_LINKING) $(OUTPUT_UTIL_WASM_MODULES)/wasi_snapshot_preview1-trampolines.wasm $(WASM_MERGE)
-	@echo [Merging the Doom WebAssembly module with wasi-snapshot-preview1 trampolines]
-	$(VB)$(WASM_MERGE) $< wasi-implementation $(word 2,$^) wasi_snapshot_preview1 -o $@ $(BINARYEN_FLAGS)
-#
-#
-#   2. Multiple `initialization` functions are merged into a single one
-OUTPUT_INTERMEDIATE_WITH_INIT_FUNCTIONS_MERGED = $(OUTPUT_DIR)/doom-with-init-functions-merged.wasm
-$(OUTPUT_INTERMEDIATE_WITH_INIT_FUNCTIONS_MERGED): $(OUTPUT_INTERMEDIATE_WITH_WASI_HOLES_FILLED) $(OUTPUT_UTIL_WASM_MODULES)/merge-two-initialization-functions-into-one.wasm $(WASM_MERGE)
-	@echo [Merging the Doom WebAssembly module with module that combines both init functions]
-	$(VB)$(WASM_MERGE) $< has-two-init-functions $(word 2,$^) merges-init-functions -o $@ $(BINARYEN_FLAGS)
-#
-#
-#   3. All exports that are not allow-listed are removed
-OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS = $(OUTPUT_DIR)/doom-with-trimmed-exports.wasm
-$(OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS): $(OUTPUT_INTERMEDIATE_WITH_INIT_FUNCTIONS_MERGED) src/reachability_graph_for_wasm-metadce.json $(WASM_METADCE)
-	@echo [Removing from Doom WebAssembly module all exports not listed as reachable in $(word 2,$^)]
-#     Note: the wasm-metadce tool is very chatty, unconditionally (as far as I can tell) outputing details
-#     about the unused exports. To prevent this mostly useless output from being seen we redirect stdout to
-#     /dev/null unless VERBOSE is set to something other than 0.
-	$(VB)$(WASM_METADCE) $< --graph-file $(word 2,$^) -o $@ $(BINARYEN_FLAGS) $(if $(VERBOSE:0=),,> /dev/null)
-#
-#
-#   4. Many global constants are added
-#				- Why? Clang/llvm toolchain does not currently support exporting global constants from C source code.
-#					So we provide useful global constants to our users by merging them into the module this way instead.
-OUTPUT_INTERMEDIATE_WITH_GLOBAL_CONSTANTS_ADDED = $(OUTPUT_DIR)/doom-with-global-constants-added.wasm
-$(OUTPUT_INTERMEDIATE_WITH_GLOBAL_CONSTANTS_ADDED): $(OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS) $(OUTPUT_UTIL_WASM_MODULES)/global-constants.wasm $(WASM_MERGE)
-	@echo [Augmenting the Doom WebAssembly module with some global constants]
-	$(VB)$(WASM_MERGE) $< doom $(word 2,$^) global-constants -o $@ $(BINARYEN_FLAGS)
-
-$(OUTPUT): $(OUTPUT_INTERMEDIATE_WITH_GLOBAL_CONSTANTS_ADDED)
-	@echo [Producing final Doom WebAssembly]
-	$(VB)cp $< $@
-
-
-# Produce a text file that describes the imports and exports of the Doom WebAssembly module.
-$(OUTPUT_NAME).interface.txt: $(OUTPUT) utils/print-interface-of-wasm-module/
-	$(VB) > $@
-	$(VB)echo "##############################################################################" >> $@
-	$(VB)echo "#" >> $@
-	$(VB)echo "# Below lies the interface to the WebAssembly module located at '$(OUTPUT)'" >> $@
-	$(VB)echo "#" >> $@
-	$(VB)echo "# WARNING: This file was auto-generated, likely by calling something similar to 'make $@'." >> $@
-	$(VB)echo "# Any manual edits made to this file will probably be clobbered!" >> $@
-	$(VB)echo "#" >> $@
-	$(VB)echo "##############################################################################" >> $@
-	$(VB)echo "" >> $@
-	${VB}$(MAKE) --directory=utils/print-interface-of-wasm-module/ run PATH_TO_WASM_MODULE=$(abspath $(OUTPUT)) >> $@
 
 
 ####################################################################
@@ -328,6 +140,196 @@ ${BINARYEN_DIR}:
 $(BINARYEN_UTILS): ${BINARYEN_DIR}/bin/%: ${BINARYEN_DIR}
 	@echo [Building the Binaryen util '$*']
 	${VB}$(MAKE) --directory=$< $*
+
+
+####################################################################################
+# Targets for producing the main artifact of this repo: a Doom WebAssembly module 
+####################################################################################
+
+CFLAGS += --target=wasm32-unknown-wasi -Wall -g -Os
+# Details on a few of the linker flags used:
+#
+#   -Wl,  <-- needed to pass the immediately following option directly to the linker,
+#   --export-dynamic  <-- have linker export all non-hidden symbols
+#       see https://lld.llvm.org/WebAssembly.html#cmdoption-export-dynamic
+#   --import-undefined  <-- produce a WebAssembly import for any undefined symbols, where possible
+#       see https://lld.llvm.org/WebAssembly.html#cmdoption-import-undefined
+#   -mexec-model=reactor  <-- says "this isn't a command/program with a 'main' function that drives its execution, instead this is a library with a lifetime controlled by the user",
+#       see https://clang.llvm.org/docs/ClangCommandLineReference.html#cmdoption-clang-mexec-model
+LDFLAGS += -Wl,--export-dynamic -Wl,--import-undefined -mexec-model=reactor
+LIBS += -lm -lc
+
+OUTPUT_DIR = build
+OUTPUT_DIR_WASM_SPECIFIC = $(OUTPUT_DIR)/wasm_specific
+OUTPUT_NAME = doom.wasm
+OUTPUT = $(OUTPUT_DIR)/$(OUTPUT_NAME)
+OUTPUT_RAW_FROM_LINKING = $(OUTPUT_DIR)/doom-directly-after-linking.wasm
+OUTPUT_UTIL_WASM_MODULES = $(OUTPUT_DIR)/util-wasm-modules
+
+FILE_EMBEDDED_IN_CODE_DIR = $(OUTPUT_DIR)/file_embedded_in_code
+FILE_EMBEDDED_IN_CODE_OUTPUT_DIR = $(FILE_EMBEDDED_IN_CODE_DIR)/$(OUTPUT_DIR)
+
+SRC_DOOM = dummy.c am_map.c doomdef.c doomstat.c dstrings.c d_event.c d_items.c d_iwad.c d_loop.c d_main.c d_mode.c d_net.c f_finale.c f_wipe.c g_game.c hu_lib.c hu_stuff.c info.c i_cdmus.c i_endoom.c i_joystick.c i_scale.c i_sound.c i_system.c i_timer.c memio.c m_argv.c m_bbox.c m_cheat.c m_config.c m_controls.c m_fixed.c m_menu.c m_misc.c m_random.c p_ceilng.c p_doors.c p_enemy.c p_floor.c p_inter.c p_lights.c p_map.c p_maputl.c p_mobj.c p_plats.c p_pspr.c p_saveg.c p_setup.c p_sight.c p_spec.c p_switch.c p_telept.c p_tick.c p_user.c r_bsp.c r_data.c r_draw.c r_main.c r_plane.c r_segs.c r_sky.c r_things.c sha1.c sounds.c statdump.c st_lib.c st_stuff.c s_sound.c tables.c v_video.c wi_stuff.c w_checksum.c w_file.c w_wad.c z_zone.c i_input.c i_video.c doomgeneric.c
+SRC_DOOM_WASM_SPECIFIC = doom_wasm.c internal__wasi-snapshot-preview1.c
+EMBEDDED_BINARY_FILES = DOOM1.WAD
+SRC_FOR_EMBEDDED_FILES = $(addprefix $(FILE_EMBEDDED_IN_CODE_DIR)/, $(addsuffix .c, $(EMBEDDED_BINARY_FILES)))
+HEADERS_FOR_EMBEDDED_FILES = $(addprefix $(FILE_EMBEDDED_IN_CODE_DIR)/, $(addsuffix .h, $(EMBEDDED_BINARY_FILES)))
+
+OBJS += $(addprefix $(OUTPUT_DIR)/, $(patsubst %.c, %.o, $(SRC_DOOM)))
+OBJS_WASM_SPECIFIC += $(addprefix $(OUTPUT_DIR_WASM_SPECIFIC)/, $(patsubst %.c, %.o, $(SRC_DOOM_WASM_SPECIFIC)))
+OBJS_EMBEDDED_FILE += $(addprefix $(FILE_EMBEDDED_IN_CODE_OUTPUT_DIR)/, $(addsuffix .o, $(EMBEDDED_BINARY_FILES)))
+
+# The WASI SDK (https://github.com/WebAssembly/wasi-sdk) conventiently packages up all that's needed to use Clang to compile to WebAssembly,
+# and what's even better is that they provide a Docker image with all needed tools already installed and configured: https://github.com/WebAssembly/wasi-sdk?tab=readme-ov-file#docker-image
+RUN_IN_WASI_SDK_DOCKER_IMAGE = docker run --rm -v $(DIR_CONTAINING_THIS_MAKEFILE):/repo -w /repo ghcr.io/webassembly/wasi-sdk:wasi-sdk-24
+
+
+clean:
+	rm -rf $(OUTPUT_DIR)
+
+# TARGET THAT ONLY EXISTS AS AN OPTIMIZATION
+#
+# THis is a target that builds the main artifact by immediately delegating to the WASI SDK docker image to compile all source code.
+# This target exists as a way to save time when the main artifact has to be built from scratch.
+# It saves time by not having to step into and out of a docker container each time one dependency of the main artifact has to be built.
+# One sampling of the time difference between this approach and the alternative `make $(OUTPUT)` showed a savings of around 30% (~2 mins vs. ~3 mins) when building from scratch.
+doom: $(SRC_FOR_EMBEDDED_FILES) $(HEADERS_FOR_EMBEDDED_FILES)
+	@echo [Delegating to WASI SDK Docker image just once]
+	$(VB)${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $(OUTPUT_RAW_FROM_LINKING)
+	@echo [Stepping out of WASI SDK Docker image for final steps of building the main artifact]
+	$(VB)$(MAKE) $(MAKEFLAGS) $(OUTPUT)
+
+# Link all object files together to produce the needed artifact, but make sure that linking happens via the WASI SDK.
+# We do this by detecting when the literal phrase 'wasi' DOESN'T appear in the path to the compiler
+# (e.g. you're running locally and aren't configured to use a local WASI SDK installation)
+# and then rerunning this `make` target in a docker container based on the WASI SDK docker image.
+$(OUTPUT_RAW_FROM_LINKING): $(OBJS) $(OBJS_WASM_SPECIFIC) $(OBJS_EMBEDDED_FILE)
+	$(VB)if echo "$(CC)" | grep -q "wasi"; then \
+		echo [Linking $@]; \
+		$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(OBJS_WASM_SPECIFIC) $(OBJS_EMBEDDED_FILE) -s -o $@ $(LIBS); \
+	else \
+		echo [Delegating to WASI SDK Docker image]; \
+		${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $@; \
+	fi
+
+$(OBJS): | $(OUTPUT_DIR)
+
+$(OBJS_WASM_SPECIFIC): | $(OUTPUT_DIR_WASM_SPECIFIC)
+
+$(OBJS_EMBEDDED_FILE): | $(FILE_EMBEDDED_IN_CODE_OUTPUT_DIR)
+
+OUTPUT_DIRS = $(OUTPUT_DIR) $(OUTPUT_DIR_WASM_SPECIFIC) $(OUTPUT_UTIL_WASM_MODULES) $(FILE_EMBEDDED_IN_CODE_DIR) $(FILE_EMBEDDED_IN_CODE_OUTPUT_DIR)
+
+$(OUTPUT_DIRS):
+	@echo [Creating output folder \'$@\']
+	$(VB)mkdir -p $@
+
+# Produce object files by compiling the related source file, but make sure that compiling happens via the WASI SDK.
+# We do this by detecting when the literal phrase 'wasi' DOESN'T appear in the path to the compiler
+# (e.g. you're running locally and aren't configured to use a local WASI SDK installation)
+# and then rerunning this `make` target in a docker container based on the WASI SDK docker image.
+$(OUTPUT_DIR)/%.o:	doomgeneric/src/%.c
+	$(VB)if echo "$(CC)" | grep -q "wasi"; then \
+		echo [Compiling $<]; \
+		$(CC) $(CFLAGS) -I$(DIR_CONTAINING_THIS_MAKEFILE)/doomgeneric -I$(DIR_CONTAINING_THIS_MAKEFILE)/doomgeneric/include -c $< -o $@; \
+	else \
+		echo [Delegating to WASI SDK Docker image]; \
+		${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $@; \
+	fi
+
+$(OUTPUT_DIR_WASM_SPECIFIC)/%.o:	src/%.c $(HEADERS_FOR_EMBEDDED_FILES)
+	$(VB)if echo "$(CC)" | grep -q "wasi"; then \
+		echo [Compiling $<]; \
+		$(CC) $(CFLAGS) -I$(DIR_CONTAINING_THIS_MAKEFILE)/doomgeneric -I$(OUTPUT_DIR) -c $< -o $@; \
+	else \
+		echo [Delegating to WASI SDK Docker image]; \
+		${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $@; \
+	fi
+
+$(FILE_EMBEDDED_IN_CODE_OUTPUT_DIR)/%.o:	$(FILE_EMBEDDED_IN_CODE_DIR)/%.c
+	$(VB)if echo "$(CC)" | grep -q "wasi"; then \
+		echo [Compiling $<]; \
+		$(CC) $(CFLAGS) -c $< -o $@; \
+	else \
+		echo [Delegating to WASI SDK Docker image]; \
+		${RUN_IN_WASI_SDK_DOCKER_IMAGE} make $(MAKEFLAGS) $@; \
+	fi
+
+# Provide the Doom shareware WAD by retrieving it via the URL advertised here: https://doomwiki.org/wiki/DOOM1.WAD
+$(OUTPUT_DIR)/DOOM1.WAD: | $(OUTPUT_DIR)
+	@echo [Retreiving Shareware Doom WAD from the internet]
+	$(VB)curl --output $(OUTPUT_DIR)/DOOM1.WAD https://distro.ibiblio.org/slitaz/sources/packages/d/doom1.wad
+
+# Support generating .c and .h files that contain and reference, respectively, an embedded copy of another file
+$(FILE_EMBEDDED_IN_CODE_DIR)/%.c $(FILE_EMBEDDED_IN_CODE_DIR)/%.h: $(OUTPUT_DIR)/% utils/generate_code_for_embedded_file.py | $(FILE_EMBEDDED_IN_CODE_DIR)
+	@echo [Here's what we're depending on: ${DEV_PYTHON_VIRTUAL_ENV}]
+	@echo [Generating $(<F).c and $(<F).h, the source and header file to embed '$<']
+	${VB}( \
+		${ACTIVATE_DEV_PYTHON_VIRTUAL_ENV}; \
+		python utils/generate_code_for_embedded_file.py --input $< --destination-folder $(FILE_EMBEDDED_IN_CODE_DIR) ; \
+	)
+
+# Compile .wat files in src/wat in order to produce an associated .wasm module in $(OUTPUT_DIR)/util-wasm-modules
+$(OUTPUT_UTIL_WASM_MODULES)/%.wasm: src/wat/%.wat $(WASM_AS) | $(OUTPUT_UTIL_WASM_MODULES)
+	@echo [Compiling WAT file \'$<\']
+	$(VB)$(WASM_AS) $< -o $@
+
+BINARYEN_FLAGS = --enable-bulk-memory
+
+# After compilation and linking has finished the Doom WebAssembly module passes through a few custom
+# transformations before it's considered complete:
+#
+#
+#   1. All needed `wasi_snapshot_preview1` imports are filled by calling back into similarly named exports
+OUTPUT_INTERMEDIATE_WITH_WASI_HOLES_FILLED = $(OUTPUT_DIR)/doom-with-wasi-holes-filled.wasm
+$(OUTPUT_INTERMEDIATE_WITH_WASI_HOLES_FILLED): $(OUTPUT_RAW_FROM_LINKING) $(OUTPUT_UTIL_WASM_MODULES)/wasi_snapshot_preview1-trampolines.wasm $(WASM_MERGE)
+	@echo [Merging the Doom WebAssembly module with wasi-snapshot-preview1 trampolines]
+	$(VB)$(WASM_MERGE) $< wasi-implementation $(word 2,$^) wasi_snapshot_preview1 -o $@ $(BINARYEN_FLAGS)
+#
+#
+#   2. Multiple `initialization` functions are merged into a single one
+OUTPUT_INTERMEDIATE_WITH_INIT_FUNCTIONS_MERGED = $(OUTPUT_DIR)/doom-with-init-functions-merged.wasm
+$(OUTPUT_INTERMEDIATE_WITH_INIT_FUNCTIONS_MERGED): $(OUTPUT_INTERMEDIATE_WITH_WASI_HOLES_FILLED) $(OUTPUT_UTIL_WASM_MODULES)/merge-two-initialization-functions-into-one.wasm $(WASM_MERGE)
+	@echo [Merging the Doom WebAssembly module with module that combines both init functions]
+	$(VB)$(WASM_MERGE) $< has-two-init-functions $(word 2,$^) merges-init-functions -o $@ $(BINARYEN_FLAGS)
+#
+#
+#   3. All exports that are not allow-listed are removed
+OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS = $(OUTPUT_DIR)/doom-with-trimmed-exports.wasm
+$(OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS): $(OUTPUT_INTERMEDIATE_WITH_INIT_FUNCTIONS_MERGED) src/reachability_graph_for_wasm-metadce.json $(WASM_METADCE)
+	@echo [Removing from Doom WebAssembly module all exports not listed as reachable in $(word 2,$^)]
+#     Note: the wasm-metadce tool is very chatty, unconditionally (as far as I can tell) outputing details
+#     about the unused exports. To prevent this mostly useless output from being seen we redirect stdout to
+#     /dev/null unless VERBOSE is set to something other than 0.
+	$(VB)$(WASM_METADCE) $< --graph-file $(word 2,$^) -o $@ $(BINARYEN_FLAGS) $(if $(VERBOSE:0=),,> /dev/null)
+#
+#
+#   4. Many global constants are added
+#				- Why? Clang/llvm toolchain does not currently support exporting global constants from C source code.
+#					So we provide useful global constants to our users by merging them into the module this way instead.
+OUTPUT_INTERMEDIATE_WITH_GLOBAL_CONSTANTS_ADDED = $(OUTPUT_DIR)/doom-with-global-constants-added.wasm
+$(OUTPUT_INTERMEDIATE_WITH_GLOBAL_CONSTANTS_ADDED): $(OUTPUT_INTERMEDIATE_WITH_TRIMMED_EXPORTS) $(OUTPUT_UTIL_WASM_MODULES)/global-constants.wasm $(WASM_MERGE)
+	@echo [Augmenting the Doom WebAssembly module with some global constants]
+	$(VB)$(WASM_MERGE) $< doom $(word 2,$^) global-constants -o $@ $(BINARYEN_FLAGS)
+
+$(OUTPUT): $(OUTPUT_INTERMEDIATE_WITH_GLOBAL_CONSTANTS_ADDED)
+	@echo [Producing final Doom WebAssembly]
+	$(VB)cp $< $@
+
+
+# Produce a text file that describes the imports and exports of the Doom WebAssembly module.
+$(OUTPUT_NAME).interface.txt: $(OUTPUT) utils/print-interface-of-wasm-module/
+	$(VB) > $@
+	$(VB)echo "##############################################################################" >> $@
+	$(VB)echo "#" >> $@
+	$(VB)echo "# Below lies the interface to the WebAssembly module located at '$(OUTPUT)'" >> $@
+	$(VB)echo "#" >> $@
+	$(VB)echo "# WARNING: This file was auto-generated, likely by calling something similar to 'make $@'." >> $@
+	$(VB)echo "# Any manual edits made to this file will probably be clobbered!" >> $@
+	$(VB)echo "#" >> $@
+	$(VB)echo "##############################################################################" >> $@
+	$(VB)echo "" >> $@
+	${VB}$(MAKE) --directory=utils/print-interface-of-wasm-module/ run PATH_TO_WASM_MODULE=$(abspath $(OUTPUT)) >> $@
 
 
 ####################################################################
