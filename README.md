@@ -2,6 +2,8 @@
 
 Providing a [WebAssembly](https://webassembly.org/) module that can fully run [_Doom_](https://en.wikipedia.org/wiki/Doom_(1993_video_game)) while having a small and easy-to-understand interface.
 
+[Here](https://jacobenget.github.io/doom.wasm/examples/browser/doom.html) is a bare-bones (i.e. the source code is very simple, take a look!) example of using this WebAssembly module to run _Doom_ in the browser.
+
 ## Why?
 
 Wait, hasn't _Doom_ already been ported to WebAssembly?
@@ -31,7 +33,7 @@ We've succeeded in producing a _Doom_ WebAssembly module that only imports 10 fu
 
 | Project | Imported Functions | Exported Functions | Surface Area (Imported and Exported Functions) | Notes |
 | ---- | ---- | ---- | ---- | ---- |
-| `doom.wasm` | 10 | 4 | 14 | Supports loading of custom WAD data. |
+| `doom.wasm` | 10 | 4 | 14 | Powers the app hosted [here](https://jacobenget.github.io/doom.wasm/examples/browser/doom.html). Supports loading of custom WAD data. |
 
 Further information on this simple interface is located in [Details](#details).
 
@@ -70,8 +72,9 @@ The [`examples`](examples/) directory contains a few examples of using `doom.was
 
 Currently, there are three such examples:
 1. [`browser`](examples/browser/): Runs _Doom_ in a webpage, using the browser's support for WebAssembly and drawing frames of _Doom_ to an HTML Canvas
-2. [`native`](examples/native/): Runs _Doom_ natively, leveraging the [Wasmtime](https://wasmtime.dev/) WebAssembly runtime and [SDL](https://www.libsdl.org/)
-2. [`python`](examples/python/): Runs _Doom_ via [Python](https://www.python.org/), leveraging the [`wasmtime`](https://pypi.org/project/wasmtime/) Python bindings to the [Wasmtime](https://wasmtime.dev/) WebAssembly runtime, and [PyGame](https://www.pygame.org/wiki/about)
+   - This example is hosted live [here](https://jacobenget.github.io/doom.wasm/examples/browser/doom.html)
+1. [`native`](examples/native/): Runs _Doom_ natively, leveraging the [Wasmtime](https://wasmtime.dev/) WebAssembly runtime and [SDL](https://www.libsdl.org/)
+1. [`python`](examples/python/): Runs _Doom_ via [Python](https://www.python.org/), leveraging the [`wasmtime`](https://pypi.org/project/wasmtime/) Python bindings to the [Wasmtime](https://wasmtime.dev/) WebAssembly runtime, and [PyGame](https://www.pygame.org/wiki/about)
 
 Each of these examples can be run from the top-level directory of this repo via a `make` target named `run-example_<example-name>`, e.g.:
 

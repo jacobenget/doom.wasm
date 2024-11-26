@@ -16,7 +16,9 @@ It wouldn't be difficult to add these missing features to this example, but they
 
 ## Running
 
-The `make` target `run` exists for "running" this example. Running this example means locally serving up a webpage that runs _Doom_.
+This example is hosted live [here](https://jacobenget.github.io/doom.wasm/examples/browser/doom.html).
+
+The `make` target `run` exists for "running" this example locally. Running this example means locally serving up a webpage that runs _Doom_.
 
 To run this example one must provide a path to a copy of `doom.wasm`, as produced by this repo, via the `PATH_TO_DOOM_WASM` env variable.
 
