@@ -209,6 +209,19 @@
       */
       canvas#DoomGame { opacity: 80%; }
       canvas#DoomGame:focus { opacity: 100%; }
+
+      /*
+        Adjust default stylings so the `body` of this page perfectly hugs the contained `canvas`,
+        with no surrounding whitespace.
+
+        With this change one can embed this page in an `iframe` elsewhere and that `iframe` will
+        faithfully show just the contained `canvas`.
+      */
+      canvas#DoomGame { display: block; }
+      body {
+        margin: 0px;
+        padding: 0px;
+      }
     </style>
   </head>
   <body>
