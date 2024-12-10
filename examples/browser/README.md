@@ -10,6 +10,8 @@ Particularly, this example only manages these details in order to run _Doom_:
 1. Listen to all [KeyboardEvent](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent) activity on the HTML canvas and forward all relevant ones to _Doom_
 1. Forward _Doom_ `info` and `error` messages to the JavaScript console (not necessary, but helpful!)
 
+Game controls in this example are the same keyboard controls present in vanilla _Doom_, detailed [here](https://doom.fandom.com/wiki/Controls#Default_controls).
+
 What's missing? This example doesn't support loading custom WADs into _Doom_ (instead _Doom_ always loads the [_Doom_ shareware WAD](https://doomwiki.org/wiki/DOOM1.WAD)), and doesn't support the user saving their game progress.
 
 It wouldn't be difficult to add these missing features to this example, but they're being left out so this example is a demonstration of the minimal code needed to get _Doom_ running in this use case.
