@@ -2,7 +2,7 @@
 
 Providing a [WebAssembly](https://webassembly.org/) module that can fully run [_Doom_](https://en.wikipedia.org/wiki/Doom_(1993_video_game)) while having a small and easy-to-understand interface.
 
-[Here](https://jacobenget.github.io/doom.wasm/examples/browser/doom.html) is a bare-bones (i.e. the source code is very simple, take a look!) example of using this WebAssembly module to run _Doom_ in the browser.
+[Here](https://jacobenget.github.io/doom.wasm/examples/browser/doom.html) is a bare-bones (i.e. the source code is very simple, take a look!) example of using this WebAssembly module to run _Doom_ in the browser - game controls are the same keyboard controls present in vanilla _Doom_, detailed [here](https://doom.fandom.com/wiki/Controls#Default_controls).
 
 ## Why?
 
